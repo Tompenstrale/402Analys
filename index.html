@@ -639,9 +639,9 @@ function renderSetupHistory() {
   tb.innerHTML = "";
   // Samla alla setup changes med repans datum
   const all = [];
-  runs.forEach(r => {
+  runs.forEach((r, ri) => {
     (r.setup_changes || []).forEach(sc => {
-      all.push({ date: r.date, name: sc.name, value: sc.value, et: r.et14 || r.et18 || r.et100 || null });
+      all.push({ date: r.date, name: sc.name, value: sc.value, et: r.et14 || r.et18 || r.et100 || null, runIndex: ri });
     });
   });
   if (!all.length) {
@@ -652,9 +652,49 @@ function renderSetupHistory() {
   all.sort((a, b) => b.date < a.date ? -1 : b.date > a.date ? 1 : 0);
   all.forEach(c => {
     const tr = document.createElement("tr");
+    tr.style.cursor = "pointer";
+    tr.title = "Click to show the time slip";
+    tr.onclick = () => showHistorySlip(c.runIndex);
     tr.innerHTML = `<td>${c.date}</td><td><strong>${c.name}</strong></td><td>${c.value}</td><td>${c.et ?? "–"}</td>`;
     tb.appendChild(tr);
   });
+}
+
+/* ============ HISTORY SLIP MODAL ============ */
+function showHistorySlip(runIndex) {
+  const r = runs[runIndex];
+  if (!r) return;
+  const w = r.weather || {};
+  const dists = [
+    { key: "dial_in", label: "Dial-in" },
+    { key: "rt", label: "Reaction Time" },
+    { key: "ft60", label: "60 ft" },
+    { key: "et100", label: "330 ft" },
+    { key: "et18", label: "660 ft (1/8)" },
+    { key: "mph18", label: "660 ft Speed" },
+    { key: "et14", label: "1320 ft (1/4)" },
+    { key: "mph", label: "1320 ft Speed" }
+  ];
+  let rows = "";
+  dists.forEach(d => {
+    const v = r[d.key];
+    const unit = (d.key === "mph18" || d.key === "mph") && v ? " km/h" : "";
+    rows += `<div class="ts-row${v ? "" : " muted"}"><span class="ts-label">${d.label}</span><span class="ts-value">${v ?? "–"}${unit}</span></div>`;
+  });
+  const setupTxt = (r.setup_changes || []).map(sc => `<strong>${sc.name}</strong>: ${sc.value}`).join(" · ");
+  const weatherTxt = w.da !== null && w.da !== undefined ? "DA " + w.da + " ft" + (w.hw !== null && w.hw !== undefined ? " · " + windText(w.hw) : "") : "";
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  modal.innerHTML = `<div class="inner">
+    <h3>⏱ ${r.date || "Run"} – ${r.track || ""}</h3>
+    <div class="timeslip" style="margin:0 0 10px 0"><div class="ts-header">Time slip</div>${rows}</div>
+    ${setupTxt ? `<p class="meta" style="margin:0 0 4px 0"><b>Setup:</b> ${setupTxt}</p>` : ""}
+    ${weatherTxt ? `<p class="meta" style="margin:0 0 4px 0">${weatherTxt}</p>` : ""}
+    <div class="btnrow"><button class="ghost" onclick="this.closest('.modal').remove()">Close</button></div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.classList.add("open");
 }
 
 /* ============ VIEWS ============ */
