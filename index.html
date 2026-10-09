@@ -784,6 +784,31 @@ function logoClick() {
   }
 }
 
+/* ============ SWIPE NAVIGATION ============ */
+const SWIPE_ORDER = ["log", "analysis", "predict", "data"];
+let swipeStartX = null, swipeStartY = null, swipeActive = false;
+
+document.addEventListener("touchstart", (e) => {
+  if (e.target.closest(".modal") || e.target.closest(".bottomnav")) { swipeActive = false; return; }
+  const t = e.touches[0];
+  swipeStartX = t.clientX;
+  swipeStartY = t.clientY;
+  swipeActive = true;
+}, { passive: true });
+
+document.addEventListener("touchend", (e) => {
+  if (!swipeActive) return;
+  swipeActive = false;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeStartX;
+  const dy = t.clientY - swipeStartY;
+  if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+  const current = SWIPE_ORDER.find(v => document.getElementById("view-" + v).style.display !== "none");
+  const idx = SWIPE_ORDER.indexOf(current);
+  if (dx < 0 && idx < SWIPE_ORDER.length - 1) showView(SWIPE_ORDER[idx + 1]);
+  else if (dx > 0 && idx > 0) showView(SWIPE_ORDER[idx - 1]);
+}, { passive: true });
+
 /* ============ INIT ============ */
 load();
 fillTrackSelects();
