@@ -15,9 +15,21 @@
   h1 { font-size: 1.35rem; margin-bottom: 2px; }
   h1 .num { color: var(--accent); }
   .subtitle { color: var(--muted); font-size: 0.82rem; margin-bottom: 16px; }
-  .viewnav { display: flex; gap: 4px; margin-bottom: 12px; position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0 0; border-bottom: 2px solid var(--border); }
-  .viewbtn { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: none; border-radius: 10px 10px 0 0; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; line-height: 1.2; }
-  .viewbtn.active { border-color: var(--border); color: var(--accent); background: var(--card); font-weight: 700; border-bottom: 2px solid var(--card); margin-bottom: -2px; }
+  .bottomnav {
+    position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; padding: 8px 14px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 22px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.14); z-index: 100;
+  }
+  .bottomnav .navbtn {
+    width: 46px; height: 46px; border-radius: 16px; border: 1px solid transparent;
+    background: transparent; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; line-height: 1; padding: 0;
+  }
+  .bottomnav .navbtn:hover { background: var(--card2); }
+  .bottomnav .navbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(217,158,0,.1); }
+  body { padding-bottom: 90px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
   .field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
@@ -68,11 +80,11 @@
 <h1>🏁 402 <span class="num">Analysis</span></h1>
 <div class="subtitle">Log time slips · analyze · predict with current weather</div>
 
-<div class="viewnav">
-  <button class="viewbtn active" id="vbtn-log" onclick="showView('log')">⏱ Log</button>
-  <button class="viewbtn" id="vbtn-analysis" onclick="showView('analysis')">📊 Analysis</button>
-  <button class="viewbtn" id="vbtn-predict" onclick="showView('predict')">🎯 Predict</button>
-  <button class="viewbtn" id="vbtn-data" onclick="showView('data')">💾 Data</button>
+<div class="bottomnav">
+  <button class="navbtn active" id="vbtn-log" onclick="showView('log')" title="Log">🧾</button>
+  <button class="navbtn" id="vbtn-analysis" onclick="showView('analysis')" title="Analysis">📊</button>
+  <button class="navbtn" id="vbtn-predict" onclick="showView('predict')" title="Predict">🎯</button>
+  <button class="navbtn" id="vbtn-data" onclick="showView('data')" title="Data">💾</button>
 </div>
 
 <!-- LOG -->
