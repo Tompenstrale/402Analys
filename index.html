@@ -184,6 +184,7 @@
     <h3>⏱ Add run</h3>
     <div class="grid">
       <div class="field"><label>Date</label><input id="r_date" type="date" onchange="autoWeather()"></div>
+      <div class="field"><label>Time</label><input id="r_time" type="time" onchange="autoWeather()"></div>
       <div class="field"><label>Track</label><select id="r_track" onchange="autoWeather()"></select></div>
     </div>
     <div class="hero" style="margin:8px 0 10px 0">
@@ -331,7 +332,10 @@ async function autoWeather() {
   const full = document.getElementById("r_weather_full");
   if (full) full.textContent = "Fetching weather…";
   try {
-    const hour = autoWeatherHour !== null ? autoWeatherHour : 12;
+    let hour = 12;
+    const timeVal = document.getElementById("r_time").value;
+    if (autoWeatherHour !== null) hour = autoWeatherHour;
+    else if (timeVal) hour = parseInt(timeVal.slice(0, 2)) || 12;
     modalWeather = await fetchWeatherForTrack(track, date, hour);
     updateRunWeatherUI(modalWeather);
   } catch(e) {
@@ -367,11 +371,13 @@ function renderSetupChanges() {
 /* ============ ADD RUN ============ */
 function openRunModal() {
   document.getElementById("r_date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("r_time").value = new Date().toTimeString().slice(0,5);
   ["r_dial","r_rt","r_ft60","r_et100","r_et18","r_et14","r_mph18","r_mph","r_paste"].forEach(f => document.getElementById(f).value = "");
   modalSetupChanges = [];
   renderSetupChanges();
   modalWeather = null;
   autoWeatherHour = null;
+  document.getElementById("r_time").value = new Date().toTimeString().slice(0,5);
   updateRunWeatherUI(null);
   autoWeather();
   document.getElementById("runModal").classList.add("open");
@@ -379,7 +385,7 @@ function openRunModal() {
 function saveRun() {
   const g = id => document.getElementById(id).value || null;
   const run = {
-    date: g("r_date"), track: document.getElementById("r_track").value,
+    date: g("r_date"), time: g("r_time"), track: document.getElementById("r_track").value,
     dial_in: g("r_dial"), rt: g("r_rt"), ft60: g("r_ft60"),
     et100: g("r_et100"), et18: g("r_et18"), et14: g("r_et14"),
     mph18: g("r_mph18"), mph: g("r_mph"),
@@ -406,7 +412,7 @@ function renderRuns() {
     const da = r.weather ? r.weather.da : null;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${r.date || "–"}</td>
+      <td>${r.date || "–"}${r.time ? ` <span class="muted" style="font-size:.76rem">${r.time}</span>` : ""}</td>
       <td><strong>${r.et14 ?? r.et18 ?? r.et100 ?? "–"}</strong></td>
       <td>${da !== null && da !== undefined ? da + " ft" : "–"}</td>
       <td>${(r.setup_changes && r.setup_changes.length) ? "<span title='" + r.setup_changes.map(sc => sc.name + ": " + sc.value).join(" · ") + "'>🔧 " + r.setup_changes.length + "</span>" : ""}</td>
@@ -441,7 +447,16 @@ function parsePaste() {
   }
   // Time: AM/PM or 24h
   const am = text.match(/\b(\d{1,2}):(\d{2})\s*([AaPp])/);
-  if (am) { let h = parseInt(am[1]); if (am[3].toUpperCase()==="P" && h<12) h+=12; if (am[3].toUpperCase()==="A" && h===12) h=0; autoWeatherHour = h; filled.push("Hour: " + h + " (24h)"); }
+  if (am) { let h = parseInt(am[1]); if (am[3].toUpperCase()==="P" && h<12) h+=12; if (am[3].toUpperCase()==="A" && h===12) h=0;
+    const mm = am[2];
+    document.getElementById("r_time").value = String(h).padStart(2,"0") + ":" + mm;
+    autoWeatherHour = h;
+    filled.push("Time: " + String(h).padStart(2,"0") + ":" + mm);
+  }
+  else {
+    const tm = text.match(/\b(\d{1,2}):(\d{2})\b/);
+    if (tm) { const h = parseInt(tm[1]); if (h >= 0 && h <= 23) { document.getElementById("r_time").value = String(h).padStart(2,"0") + ":" + tm[2]; autoWeatherHour = h; filled.push("Time: " + String(h).padStart(2,"0") + ":" + tm[2]); } }
+  }
 
   // Labeled values
   const lp = [
@@ -691,7 +706,7 @@ function renderSetupHistory() {
   const all = [];
   runs.forEach((r, ri) => {
     (r.setup_changes || []).forEach(sc => {
-      all.push({ date: r.date, name: sc.name, value: sc.value, et: r.et14 || r.et18 || r.et100 || null, runIndex: ri });
+      all.push({ date: r.date, time: r.time, name: sc.name, value: sc.value, et: r.et14 || r.et18 || r.et100 || null, runIndex: ri });
     });
   });
   if (!all.length) {
@@ -705,7 +720,7 @@ function renderSetupHistory() {
     tr.style.cursor = "pointer";
     tr.title = "Click to show the time slip";
     tr.onclick = () => showHistorySlip(c.runIndex);
-    tr.innerHTML = `<td>${c.date}</td><td><strong>${c.name}</strong></td><td>${c.value}</td><td>${c.et ?? "–"}</td>`;
+    tr.innerHTML = `<td>${c.date}${c.time ? ` <span class="muted" style="font-size:.76rem">${c.time}</span>` : ""}</td><td><strong>${c.name}</strong></td><td>${c.value}</td><td>${c.et ?? "–"}</td>`;
     tb.appendChild(tr);
   });
 }
@@ -737,7 +752,7 @@ function showHistorySlip(runIndex) {
   modal.className = "modal";
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
   modal.innerHTML = `<div class="inner">
-    <h3>⏱ ${r.date || "Run"} – ${r.track || ""}</h3>
+    <h3>⏱ ${r.date || "Run"} ${r.time || ""} – ${r.track || ""}</h3>
     <div class="timeslip" style="margin:0 0 10px 0"><div class="ts-header">Time slip</div>${rows}</div>
     ${setupTxt ? `<p class="meta" style="margin:0 0 4px 0"><b>Setup:</b> ${setupTxt}</p>` : ""}
     <div class="hero" style="margin:8px 0">
