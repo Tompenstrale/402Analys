@@ -124,6 +124,11 @@
     <p class="meta" style="margin:0 0 8px 0">How much does DA affect your 1320 ft ET?</p>
     <div id="daAnalysis"></div>
   </div>
+  <div class="card" id="setupCompareCard">
+    <h2>Setup changes comparison</h2>
+    <p class="meta" style="margin:0 0 8px 0">Average 1320 ft ET per setting value, from setup changes registered on runs.</p>
+    <div id="setupCompareBody"></div>
+  </div>
   <div class="card">
     <h2>Runs per track</h2>
     <div id="trackAnalysis" class="bar-chart"></div>
@@ -562,12 +567,7 @@ function renderAnalysis() {
     });
     sHtml += "</tbody></table>";
   });
-  if (sHtml) {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<h2>Setup changes comparison</h2><p class="meta" style="margin:0 0 8px 0">Average 1320 ft ET per setting value, from setup changes registered on runs.</p>${sHtml}`;
-    document.getElementById("view-analysis").insertBefore(card, document.getElementById("view-analysis").children[3]);
-  }
+  document.getElementById("setupCompareBody").innerHTML = sHtml;
 
   // Track bar chart
   const tEl = document.getElementById("trackAnalysis");
