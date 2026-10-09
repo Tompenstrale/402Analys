@@ -167,6 +167,14 @@
     </div>
     <input type="file" id="importRacingFile" accept=".json" style="display:none" onchange="importRacingApp(this)">
   </div>
+  <div class="card">
+    <h2>Setup change history</h2>
+    <p class="meta" style="margin:0 0 8px 0">All setup changes in chronological order, newest first.</p>
+    <table>
+      <thead><tr><th>Date</th><th>Setting</th><th>Value</th><th>ET</th></tr></thead>
+      <tbody id="setupHistoryBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- RUN MODAL -->
@@ -346,7 +354,7 @@ function saveRun() {
   renderRuns();
 }
 function removeRun(i) {
-  if (confirm("Delete run " + runs[i].date + "?")) { runs.splice(i,1); persist(); renderRuns(); }
+  if (confirm("Delete run " + runs[i].date + "?")) { runs.splice(i,1); persist(); renderRuns(); renderSetupHistory(); }
 }
 function toggleInclude(i) { runs[i].include = runs[i].include === false; persist(); renderRuns(); }
 function renderRuns() {
@@ -624,6 +632,31 @@ function clearData() {
   if (confirm("Delete ALL runs permanently?")) { runs = []; persist(); renderRuns(); renderAnalysis(); }
 }
 
+/* ============ SETUP HISTORY ============ */
+function renderSetupHistory() {
+  const tb = document.getElementById("setupHistoryBody");
+  if (!tb) return;
+  tb.innerHTML = "";
+  // Samla alla setup changes med repans datum
+  const all = [];
+  runs.forEach(r => {
+    (r.setup_changes || []).forEach(sc => {
+      all.push({ date: r.date, name: sc.name, value: sc.value, et: r.et14 || r.et18 || r.et100 || null });
+    });
+  });
+  if (!all.length) {
+    tb.innerHTML = "<tr><td colspan='4' class='muted'>No setup changes logged yet.</td></tr>";
+    return;
+  }
+  // Kronologiskt: nyast först (jämför datum som strängar funkar för ISO)
+  all.sort((a, b) => b.date < a.date ? -1 : b.date > a.date ? 1 : 0);
+  all.forEach(c => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${c.date}</td><td><strong>${c.name}</strong></td><td>${c.value}</td><td>${c.et ?? "–"}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
 /* ============ VIEWS ============ */
 function showView(v) {
   ["log","analysis","predict","data"].forEach(k => {
@@ -631,6 +664,7 @@ function showView(v) {
     document.getElementById("vbtn-" + k).classList.toggle("active", k === v);
   });
   if (v === "analysis") renderAnalysis();
+  if (v === "data") renderSetupHistory();
   if (v === "predict") fetchPredWeather();
 }
 
