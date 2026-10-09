@@ -107,7 +107,7 @@
   <div class="card">
     <h2>Recent runs</h2>
     <table>
-      <thead><tr><th>Date</th><th>ET</th><th>DA</th><th>Use</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>ET</th><th>DA</th><th>🔧</th><th>Use</th><th></th></tr></thead>
       <tbody id="runsBody"></tbody>
     </table>
   </div>
@@ -187,6 +187,13 @@
       <div class="ts-row ts-input"><span class="ts-label">660 ft Speed</span><input id="r_mph18" type="number" step="0.1" class="ts-field"></div>
       <div class="ts-row ts-input"><span class="ts-label">1320 ft (1/4)</span><input id="r_et14" type="number" step="0.001" class="ts-field"></div>
       <div class="ts-row ts-input"><span class="ts-label">1320 ft Speed</span><input id="r_mph" type="number" step="0.1" class="ts-field"></div>
+    </div>
+    <h3 style="font-size:.85rem;margin:10px 0 6px">Setup changes</h3>
+    <div id="setupChanges"></div>
+    <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="flex:1;min-width:110px"><label>Name</label><input id="sc_name" placeholder="Rear tire pressure"></div>
+      <div class="field" style="flex:1;min-width:90px"><label>Value</label><input id="sc_val" placeholder="1.4"></div>
+      <button class="ghost" style="padding:9px 12px" onclick="addSetupChange()">+ Add</button>
     </div>
     <h3 style="font-size:.85rem;margin:10px 0 6px">Paste time slip text (optional)</h3>
     <div class="field">
@@ -288,10 +295,35 @@ async function autoWeather() {
   } catch(e) { modalWeather = null; }
 }
 
+/* ============ SETUP CHANGES ============ */
+let modalSetupChanges = [];
+function addSetupChange() {
+  const name = document.getElementById("sc_name").value.trim();
+  const val = document.getElementById("sc_val").value.trim();
+  if (!name || !val) { alert("Enter both name and value."); return; }
+  modalSetupChanges.push({ name, value: val });
+  document.getElementById("sc_name").value = "";
+  document.getElementById("sc_val").value = "";
+  renderSetupChanges();
+}
+function removeSetupChange(i) { modalSetupChanges.splice(i,1); renderSetupChanges(); }
+function renderSetupChanges() {
+  const el = document.getElementById("setupChanges");
+  el.innerHTML = modalSetupChanges.length
+    ? modalSetupChanges.map((sc,i) =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--card2);border-radius:6px;padding:5px 9px;margin-bottom:4px">
+          <span style="font-size:.85rem"><strong>${sc.name}</strong>: ${sc.value}</span>
+          <button class="del" onclick="removeSetupChange(${i})">✕</button>
+        </div>`).join("")
+    : "";
+}
+
 /* ============ ADD RUN ============ */
 function openRunModal() {
   document.getElementById("r_date").value = new Date().toISOString().slice(0,10);
   ["r_dial","r_rt","r_ft60","r_et100","r_et18","r_et14","r_mph18","r_mph","r_paste"].forEach(f => document.getElementById(f).value = "");
+  modalSetupChanges = [];
+  renderSetupChanges();
   modalWeather = null;
   autoWeather();
   document.getElementById("runModal").classList.add("open");
@@ -304,6 +336,7 @@ function saveRun() {
     et100: g("r_et100"), et18: g("r_et18"), et14: g("r_et14"),
     mph18: g("r_mph18"), mph: g("r_mph"),
     include: true,
+    setup_changes: modalSetupChanges,
     weather: modalWeather
   };
   if (!run.date) { alert("Date required."); return; }
@@ -319,7 +352,7 @@ function toggleInclude(i) { runs[i].include = runs[i].include === false; persist
 function renderRuns() {
   const tb = document.getElementById("runsBody");
   tb.innerHTML = "";
-  if (!runs.length) { tb.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet. Add your first time slip!</td></tr>"; return; }
+  if (!runs.length) { tb.innerHTML = "<tr><td colspan='6' class='muted'>No runs yet. Add your first time slip!</td></tr>"; return; }
   runs.forEach((r,i) => {
     const inc = r.include !== false;
     const da = r.weather ? r.weather.da : null;
@@ -328,6 +361,7 @@ function renderRuns() {
       <td>${r.date || "–"}</td>
       <td><strong>${r.et14 ?? r.et18 ?? r.et100 ?? "–"}</strong></td>
       <td>${da !== null && da !== undefined ? da + " ft" : "–"}</td>
+      <td>${(r.setup_changes && r.setup_changes.length) ? "<span title='" + r.setup_changes.map(sc => sc.name + ": " + sc.value).join(" · ") + "'>🔧 " + r.setup_changes.length + "</span>" : ""}</td>
       <td><button class="pill ${inc ? 'ok' : 'no'}" onclick="toggleInclude(${i})">${inc ? "Yes" : "No"}</button></td>
       <td><button class="del" onclick="removeRun(${i})">✕</button></td>`;
     tb.appendChild(tr);
@@ -433,6 +467,43 @@ function renderAnalysis() {
         <tbody><tr><td>${n}</td><td>${minDa}–${maxDa} ft</td><td><strong>${(b*100).toFixed(3)}s</strong></td><td>${a.toFixed(3)}s</td></tr></tbody></table>
         <p class="meta" style="margin-top:6px">${b > 0 ? "Higher DA = slower, as expected." : b < 0 ? "Odd trend (DA seems to help) – check outliers." : "No DA dependency."}</p>`;
     }
+  }
+
+  // Setup comparison
+  const sEl = document.getElementById("setupAnalysis");
+  const groups = {};
+  inc.forEach(r => {
+    (r.setup_changes || []).forEach(sc => {
+      const key = sc.name;
+      if (!groups[key]) groups[key] = {};
+      if (!groups[key][sc.value]) groups[key][sc.value] = { sum: 0, n: 0, best: null };
+      if (r.et14) {
+        const et = parseFloat(r.et14);
+        groups[key][sc.value].sum += et;
+        groups[key][sc.value].n++;
+        if (groups[key][sc.value].best === null || et < groups[key][sc.value].best) groups[key][sc.value].best = et;
+      }
+    });
+  });
+  let sHtml = "";
+  const sKeys = Object.keys(groups);
+  if (!sKeys.length) sHtml = "<span class='muted'>No setup changes logged yet. Add them when logging runs.</span>";
+  sKeys.forEach(key => {
+    const vals = Object.keys(groups[key]);
+    if (!vals.length) return;
+    sHtml += `<h3 style="font-size:.82rem;margin:12px 0 5px">${key}</h3><table><thead><tr><th>Value</th><th>Avg 1320 ft ET</th><th>Best</th><th>Runs</th></tr></thead><tbody>`;
+    vals.forEach(v => {
+      const g = groups[key][v];
+      if (!g.n) return;
+      sHtml += `<tr><td><strong>${v}</strong></td><td>${(g.sum/g.n).toFixed(3)}s</td><td>${g.best.toFixed(3)}s</td><td>${g.n}</td></tr>`;
+    });
+    sHtml += "</tbody></table>";
+  });
+  if (sHtml) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<h2>Setup changes comparison</h2><p class="meta" style="margin:0 0 8px 0">Average 1320 ft ET per setting value, from setup changes registered on runs.</p>${sHtml}`;
+    document.getElementById("view-analysis").insertBefore(card, document.getElementById("view-analysis").children[3]);
   }
 
   // Track bar chart
