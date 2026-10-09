@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>402 Analysis</title>
+<style>
+  :root {
+    --bg: #f2f4f7; --card: #ffffff; --card2: #e9edf2; --border: #c4ccd6;
+    --text: #1a2430; --muted: #5a6a7a; --accent: #d99e00; --ok: #1e9e63;
+    --warn: #c07f00; --danger: #d93333;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 16px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.35rem; margin-bottom: 2px; }
+  h1 .num { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 0.82rem; margin-bottom: 16px; }
+  .viewnav { display: flex; gap: 4px; margin-bottom: 12px; position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0 0; border-bottom: 2px solid var(--border); }
+  .viewbtn { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: none; border-radius: 10px 10px 0 0; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; line-height: 1.2; }
+  .viewbtn.active { border-color: var(--border); color: var(--accent); background: var(--card); font-weight: 700; border-bottom: 2px solid var(--card); margin-bottom: -2px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+  .field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+  .field label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .field input, .field select, .field textarea { background: var(--card2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 9px; font-size: 0.9rem; width: 100%; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .btnrow { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button:hover { filter: brightness(1.08); }
+  .meta { color: var(--muted); font-size: 0.78rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  th { text-align: left; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+  .pill.ok { background: rgba(30,158,99,.12); color: var(--ok); border: 1px solid var(--ok); }
+  .pill.no { background: rgba(90,106,122,.1); color: var(--muted); border: 1px solid var(--border); }
+  .del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.95rem; padding: 1px 5px; }
+  .muted { color: var(--muted); }
+  .timeslip { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 5px 12px; margin: 0 0 10px 0; max-width: 320px; }
+  .timeslip .ts-row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  .timeslip .ts-row:last-child { border-bottom: none; }
+  .timeslip .ts-label { font-size: 0.76rem; color: var(--text); font-weight: 600; }
+  .timeslip .ts-value { font-size: 1rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .timeslip .ts-header { text-align: center; font-size: 0.63rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 3px; border-bottom: 1px solid var(--border); margin-bottom: 1px; }
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .hero .hero-box { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 12px; text-align: center; }
+  .hero .hero-label { font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .hero .hero-value { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+  .hero .hero-sub { font-size: 0.7rem; color: var(--muted); }
+  .bar-chart { margin-top: 6px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .bar-label { flex: 0 0 90px; font-size: 0.78rem; text-align: right; }
+  .bar-track { flex: 1; background: var(--card2); border-radius: 4px; height: 18px; position: relative; }
+  .bar-fill { background: var(--accent); border-radius: 4px; height: 100%; }
+  .bar-val { font-size: 0.76rem; font-variant-numeric: tabular-nums; min-width: 52px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; padding: 48px 12px 12px; z-index: 100; }
+  .modal.open { display: flex; }
+  .modal .inner { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; width: min(520px, 95vw); margin: auto 0; }
+  .modal h3 { margin-bottom: 12px; }
+  .ts-input .ts-label { flex: 0 0 44%; }
+  .ts-field { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 2px 6px; font-size: 0.9rem; width: 100%; font-variant-numeric: tabular-nums; text-align: right; }
+</style>
+</head>
+<body>
+
+<h1>🏁 402 <span class="num">Analysis</span></h1>
+<div class="subtitle">Log time slips · analyze · predict with current weather</div>
+
+<div class="viewnav">
+  <button class="viewbtn active" id="vbtn-log" onclick="showView('log')">⏱ Log</button>
+  <button class="viewbtn" id="vbtn-analysis" onclick="showView('analysis')">📊 Analysis</button>
+  <button class="viewbtn" id="vbtn-predict" onclick="showView('predict')">🎯 Predict</button>
+  <button class="viewbtn" id="vbtn-data" onclick="showView('data')">💾 Data</button>
+</div>
+
+<!-- LOG -->
+<div id="view-log">
+  <div class="card">
+    <h2>Quick add time slip</h2>
+    <div class="btnrow" style="margin-top:0">
+      <button onclick="openRunModal()">+ Add run</button>
+      <button class="ghost" onclick="openRunModal()">📷 Photo / paste</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Recent runs</h2>
+    <table>
+      <thead><tr><th>Date</th><th>ET</th><th>DA</th><th>Use</th><th></th></tr></thead>
+      <tbody id="runsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ANALYSIS -->
+<div id="view-analysis" style="display:none">
+  <div class="card">
+    <h2>Personal bests</h2>
+    <table id="pbTable"><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <h2>ET vs density altitude</h2>
+    <p class="meta" style="margin:0 0 8px 0">How much does DA affect your 1320 ft ET?</p>
+    <div id="daAnalysis"></div>
+  </div>
+  <div class="card">
+    <h2>Runs per track</h2>
+    <div id="trackAnalysis" class="bar-chart"></div>
+  </div>
+</div>
+
+<!-- PREDICT -->
+<div id="view-predict" style="display:none">
+  <div class="card">
+    <h2>Current weather</h2>
+    <div class="hero">
+      <div class="hero-box"><div class="hero-label">Density altitude</div><div class="hero-value" id="p_da">–</div><div class="hero-sub">ft</div></div>
+      <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value" id="p_wind">–</div><div class="hero-sub" id="p_windsub"></div></div>
+    </div>
+    <div class="field"><label>Track</label><select id="p_track" onchange="fetchPredWeather()"></select></div>
+    <div class="btnrow"><button onclick="fetchPredWeather()">🔄 Update</button></div>
+  </div>
+  <div class="card">
+    <h2>Predicted time slip</h2>
+    <div id="predSlip"></div>
+  </div>
+</div>
+
+<!-- DATA -->
+<div id="view-data" style="display:none">
+  <div class="card">
+    <h2>Local data</h2>
+    <p class="meta" style="margin:0 0 10px 0">All data lives in this browser. Export creates a JSON backup file.</p>
+    <div class="btnrow" style="margin-top:0">
+      <button class="ghost" onclick="exportData()">📤 Export</button>
+      <button class="ghost" onclick="document.getElementById('importFile').click()">📥 Import</button>
+      <button class="ghost" onclick="clearData()">🗑 Clear all</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+  </div>
+  <div class="card">
+    <h2>Import from RacingApp</h2>
+    <p class="meta" style="margin:0 0 10px 0">Load a RacingApp backup file to bring over all runs with weather data.</p>
+    <div class="btnrow" style="margin-top:0">
+      <button class="ghost" onclick="document.getElementById('importRacingFile').click()">🏁 Import RacingApp backup</button>
+    </div>
+    <input type="file" id="importRacingFile" accept=".json" style="display:none" onchange="importRacingApp(this)">
+  </div>
+</div>
+
+<!-- RUN MODAL -->
+<div class="modal" id="runModal">
+  <div class="inner">
+    <h3>⏱ Add run</h3>
+    <div class="grid">
+      <div class="field"><label>Date</label><input id="r_date" type="date"></div>
+      <div class="field"><label>Track</label><select id="r_track" onchange="autoWeather()"></select></div>
+    </div>
+    <h3 style="font-size:.85rem;margin:10px 0 6px">Time slip</h3>
+    <div class="timeslip" style="margin-bottom:10px">
+      <div class="ts-row ts-input"><span class="ts-label">Dial-in</span><input id="r_dial" type="number" step="0.001" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">Reaction Time</span><input id="r_rt" type="number" step="0.001" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">60 ft</span><input id="r_ft60" type="number" step="0.001" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">330 ft</span><input id="r_et100" type="number" step="0.001" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">660 ft (1/8)</span><input id="r_et18" type="number" step="0.001" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">660 ft Speed</span><input id="r_mph18" type="number" step="0.1" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">1320 ft (1/4)</span><input id="r_et14" type="number" step="0.001" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">1320 ft Speed</span><input id="r_mph" type="number" step="0.1" class="ts-field"></div>
+    </div>
+    <h3 style="font-size:.85rem;margin:10px 0 6px">Paste time slip text (optional)</h3>
+    <div class="field">
+      <textarea id="r_paste" rows="3" placeholder="Oct 9, 2026 2:35 PM&#10;R/T 0.128  60ft 1.621&#10;1/8 7.812 @ 143.6  1/4 12.205 @ 182.4" style="font-family:monospace;font-size:.82em"></textarea>
+      <button class="ghost" style="margin-top:6px" onclick="parsePaste()">📥 Import text</button>
+    </div>
+    <div class="btnrow">
+      <button onclick="saveRun()">Save run</button>
+      <button class="ghost" onclick="document.getElementById('runModal').classList.remove('open')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ STORAGE ============ */
+const LS = "analysis402.runs";
+let runs = [];
+function load() { try { runs = JSON.parse(localStorage.getItem(LS)) || []; } catch(e) { runs = []; } }
+function persist() { localStorage.setItem(LS, JSON.stringify(runs)); }
+function save() { persist(); }
+
+/* ============ TRACKS ============ */
+const TRACKS = [
+  { name: "Tierp Arena", lat: 59.87, lon: 17.51, bearing: 15, alt: 30 },
+  { name: "Sundsvall Raceway", lat: 62.44, lon: 17.35, bearing: 120, alt: 10 },
+  { name: "Mantorp Park", lat: 58.51, lon: 15.21, bearing: 285, alt: 110 },
+  { name: "Malmö Raceway", lat: 55.55, lon: 13.07, bearing: 200, alt: 15 }
+];
+const DEFAULT_TRACK = "Tierp Arena";
+function trackByName(n) { return TRACKS.find(t => t.name === n) || TRACKS[0]; }
+function fillTrackSelects() {
+  const opts = TRACKS.map(t => `<option>${t.name}</option>`).join("");
+  document.getElementById("r_track").innerHTML = opts;
+  document.getElementById("p_track").innerHTML = opts;
+}
+
+/* ============ WEATHER/DA ============ */
+function densityAltitudeFt(tempC, pressureHpa, humidityPct, altitudeM) {
+  if (tempC === null || tempC === undefined || pressureHpa === null || pressureHpa === undefined) return null;
+  const stationP = pressureHpa - ((altitudeM || 0) / 10) * 1.2;
+  const pInHg = stationP * 0.02953;
+  let hum = humidityPct; if (hum === null || hum === undefined || isNaN(hum)) hum = 50;
+  hum = Math.max(0, Math.min(100, hum));
+  const esHpa = 6.1121 * Math.exp((18.87 * tempC) / (tempC + 257.14));
+  const vaporInHg = esHpa * (hum / 100) * 0.02953;
+  const dryP = pInHg - vaporInHg;
+  const tR = (tempC * 9/5 + 32) + 459.67;
+  return Math.round(145366 * (1 - Math.pow(17.326 * dryP / tR, 0.235)));
+}
+function headwindComponent(speed, windDir, bearing) {
+  if (speed === null || speed === undefined || windDir === null || windDir === undefined) return null;
+  return Math.round((speed * Math.cos((windDir - bearing) * Math.PI / 180)) * 10) / 10;
+}
+function windText(hw) {
+  if (hw === null || hw === undefined || isNaN(hw)) return "";
+  if (Math.abs(hw) < 0.1) return "Calm";
+  return (hw > 0 ? "Headwind " : "Tailwind ") + Math.abs(hw).toFixed(1);
+}
+function weatherName(code) {
+  const map = {0:"Clear",1:"Mostly clear",2:"Variable",3:"Cloudy",45:"Fog",48:"Fog",51:"Drizzle",61:"Rain",63:"Rain",65:"Rain",71:"Snow",80:"Showers",95:"Thunder"};
+  return map[code] || "–";
+}
+async function fetchWeatherForTrack(track, date, hour) {
+  const isToday = !date || date === new Date().toISOString().slice(0, 10);
+  const base = isToday
+    ? "https://api.open-meteo.com/v1/forecast?latitude=" + track.lat + "&longitude=" + track.lon + "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,surface_pressure,weather_code"
+    : "https://archive-api.open-meteo.com/v1/archive?latitude=" + track.lat + "&longitude=" + track.lon + "&start_date=" + date + "&end_date=" + date + "&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,surface_pressure,weather_code&timezone=auto";
+  const j = await (await fetch(base)).json();
+  let c;
+  if (isToday) c = j.current || {};
+  else {
+    const h = j.hourly || {};
+    const idx = Math.min(Math.max(hour || 12, 0), (h.time || []).length - 1);
+    c = {
+      temperature_2m: h.temperature_2m ? h.temperature_2m[idx] : null,
+      relative_humidity_2m: h.relative_humidity_2m ? h.relative_humidity_2m[idx] : null,
+      wind_speed_10m: h.wind_speed_10m ? h.wind_speed_10m[idx] : null,
+      wind_direction_10m: h.wind_direction_10m ? h.wind_direction_10m[idx] : null,
+      surface_pressure: h.surface_pressure ? h.surface_pressure[idx] : null,
+      weather_code: h.weather_code ? h.weather_code[idx] : null
+    };
+  }
+  return {
+    temp: c.temperature_2m, hum: c.relative_humidity_2m,
+    wind: c.wind_speed_10m, windDir: c.wind_direction_10m,
+    pressure: c.surface_pressure, cond: weatherName(c.weather_code),
+    da: densityAltitudeFt(c.temperature_2m, c.surface_pressure, c.relative_humidity_2m, track.alt),
+    hw: headwindComponent(c.wind_speed_10m, c.wind_direction_10m, track.bearing)
+  };
+}
+
+/* ============ AUTO WEATHER IN MODAL ============ */
+let modalWeather = null;
+async function autoWeather() {
+  const track = trackByName(document.getElementById("r_track").value);
+  const date = document.getElementById("r_date").value;
+  try {
+    modalWeather = await fetchWeatherForTrack(track, date, 12);
+  } catch(e) { modalWeather = null; }
+}
+
+/* ============ ADD RUN ============ */
+function openRunModal() {
+  document.getElementById("r_date").value = new Date().toISOString().slice(0,10);
+  ["r_dial","r_rt","r_ft60","r_et100","r_et18","r_et14","r_mph18","r_mph","r_paste"].forEach(f => document.getElementById(f).value = "");
+  modalWeather = null;
+  autoWeather();
+  document.getElementById("runModal").classList.add("open");
+}
+function saveRun() {
+  const g = id => document.getElementById(id).value || null;
+  const run = {
+    date: g("r_date"), track: document.getElementById("r_track").value,
+    dial_in: g("r_dial"), rt: g("r_rt"), ft60: g("r_ft60"),
+    et100: g("r_et100"), et18: g("r_et18"), et14: g("r_et14"),
+    mph18: g("r_mph18"), mph: g("r_mph"),
+    include: true,
+    weather: modalWeather
+  };
+  if (!run.date) { alert("Date required."); return; }
+  runs.unshift(run);
+  persist();
+  document.getElementById("runModal").classList.remove("open");
+  renderRuns();
+}
+function removeRun(i) {
+  if (confirm("Delete run " + runs[i].date + "?")) { runs.splice(i,1); persist(); renderRuns(); }
+}
+function toggleInclude(i) { runs[i].include = runs[i].include === false; persist(); renderRuns(); }
+function renderRuns() {
+  const tb = document.getElementById("runsBody");
+  tb.innerHTML = "";
+  if (!runs.length) { tb.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet. Add your first time slip!</td></tr>"; return; }
+  runs.forEach((r,i) => {
+    const inc = r.include !== false;
+    const da = r.weather ? r.weather.da : null;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.date || "–"}</td>
+      <td><strong>${r.et14 ?? r.et18 ?? r.et100 ?? "–"}</strong></td>
+      <td>${da !== null && da !== undefined ? da + " ft" : "–"}</td>
+      <td><button class="pill ${inc ? 'ok' : 'no'}" onclick="toggleInclude(${i})">${inc ? "Yes" : "No"}</button></td>
+      <td><button class="del" onclick="removeRun(${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ============ PASTE PARSE ============ */
+function parsePaste() {
+  const text = document.getElementById("r_paste").value;
+  if (!text.trim()) { alert("Paste slip text first."); return; }
+  const clean = text.replace(/O/g, "0").replace(/,/g, ".");
+  const filled = [];
+  const g = id => document.getElementById(id);
+  const setVal = (id, v, label, dec) => { if (!g(id).value) { g(id).value = v.toFixed(dec); filled.push(label); } };
+
+  // Date: month name, ISO, YYMMDD
+  const MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+  const mn = Object.keys(MONTHS).join("|");
+  let dm = text.match(new RegExp("(" + mn + ")[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})", "i"))
+    || text.match(new RegExp("\\b(\\d{1,2})[-\\s]+(" + mn + ")[a-z]*,?\\s+(\\d{2,4})", "i"));
+  if (!dm) dm = clean.match(/(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/);
+  if (dm) {
+    let d;
+    if (MONTHS[dm[1] ? dm[1].slice(0,3).toLowerCase() : ""]) {
+      const mon = MONTHS[dm[1].slice(0,3).toLowerCase()];
+      d = dm[3] + "-" + String(mon).padStart(2,"0") + "-" + dm[2].padStart(2,"0");
+    } else d = dm[1] + "-" + dm[2].padStart(2,"0") + "-" + dm[3].padStart(2,"0");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) { g("r_date").value = d; filled.push("Date: " + d); }
+  }
+  // Time: AM/PM or 24h
+  const am = text.match(/\b(\d{1,2}):(\d{2})\s*([AaPp])/);
+  if (am) { let h = parseInt(am[1]); if (am[3].toUpperCase()==="P" && h<12) h+=12; autoWeatherHour = h; filled.push("Hour: " + h); }
+
+  // Labeled values
+  const lp = [
+    { id:"r_rt", re:/R\/?T\s*[:=]?\s*(0?\.\d{3})/i, label:"RT", dec:3 },
+    { id:"r_ft60", re:/(?:60\s*f)\s*[:=]?\s*(\d\.\d{3})/i, label:"60ft", dec:3 },
+    { id:"r_et100", re:/330\s*[:=]?\s*(\d{1,2}\.\d{3})/i, label:"330ft", dec:3 },
+    { id:"r_et18", re:/(?:1\/8|660)\s*[:=]?\s*(\d{1,2}\.\d{3})/i, label:"660ft", dec:3 },
+    { id:"r_et14", re:/(?:1\/4|1320)\s*[:=]?\s*(\d{1,2}\.\d{3})/i, label:"1320ft", dec:3 },
+    { id:"r_mph18", re:/(?:1\/8|660)\s*(?:@\s*)?(\d{2,3}(?:\.\d)?)/i, label:"660 speed", dec:1 },
+    { id:"r_mph", re:/(?:1\/4|1320)\s*(?:@\s*)?(\d{2,3}(?:\.\d)?)/i, label:"1320 speed", dec:1 },
+    { id:"r_dial", re:/dial[^\d]*(\d{1,2}\.\d{1,3})/i, label:"Dial-in", dec:3 }
+  ];
+  lp.forEach(p => { const m = clean.match(p.re); if (m) setVal(p.id, parseFloat(m[1]), p.label, p.dec); });
+
+  // Fallback: unlabeled numbers
+  const tokens = (clean.match(/\d{1,3}(?:\.\d{1,3})?/g) || []).map(parseFloat);
+  const times = tokens.filter(v => v >= 0.8 && v <= 25 && String(v).includes("."));
+  const speeds = tokens.filter(v => v >= 60 && v <= 300);
+  const ets = times.filter(v => v >= 3.0 && v <= 25).sort((a,b) => b-a);
+  if (ets.length >= 2) { setVal("r_et14", ets[0], "1320ft", 3); setVal("r_et18", ets[1], "660ft", 3); }
+  else if (ets.length === 1) { if (ets[0] >= 9) setVal("r_et14", ets[0], "1320ft", 3); else setVal("r_et18", ets[0], "660ft", 3); }
+  const ft = times.filter(v => v >= 0.8 && v < 3.0);
+  if (ft.length) setVal("r_ft60", Math.min(...ft), "60ft", 3);
+  if (speeds.length) { const s = speeds.sort((a,b) => a-b); if (g("r_mph18").value) setVal("r_mph", s[s.length-1], "1320 speed", 1); else { setVal("r_mph18", s[0], "660 speed", 1); setVal("r_mph", s[s.length-1], "1320 speed", 1); } }
+
+  if (filled.length) { alert("Imported:\n" + filled.join("\n")); autoWeather(); }
+  else alert("Could not read any values. Try format like:\n1/8 7.812 @ 143.6  1/4 12.205 @ 182.4");
+}
+let autoWeatherHour = null;
+
+/* ============ ANALYSIS ============ */
+function renderAnalysis() {
+  const inc = runs.filter(r => r.include !== false);
+  // PB
+  const pb = document.getElementById("pbTable").querySelector("tbody");
+  pb.innerHTML = "";
+  const dists = [
+    { key:"rt", label:"Reaction Time", dec:3, low:true },
+    { key:"ft60", label:"60 ft", dec:3 },
+    { key:"et100", label:"330 ft", dec:3 },
+    { key:"et18", label:"660 ft (1/8)", dec:3 },
+    { key:"et14", label:"1320 ft (1/4)", dec:3 },
+    { key:"mph", label:"1320 ft Speed", dec:1, low:true }
+  ];
+  let any = false;
+  dists.forEach(d => {
+    const vals = inc.filter(r => r[d.key]).map(r => ({ v: parseFloat(r[d.key]), r }));
+    if (!vals.length) return;
+    any = true;
+    vals.sort((a,b) => d.low ? a.v - b.v : b.v - a.v);
+    pb.innerHTML += `<tr><td>${d.label}</td><td><strong>${vals[0].v.toFixed(d.dec)}</strong> <span class="muted">(${vals[0].r.date} · ${vals[0].r.track || "–"})</span></td></tr>`;
+  });
+  if (!any) pb.innerHTML = "<tr><td class='muted'>No included runs yet.</td></tr>";
+
+  // DA regression
+  const daEl = document.getElementById("daAnalysis");
+  const pts = inc.filter(r => r.et14 && r.weather && r.weather.da != null).map(r => ({ da: r.weather.da, et: parseFloat(r.et14) }));
+  if (pts.length < 2) { daEl.innerHTML = "<span class='muted'>Need 2+ included 1320 ft runs with weather.</span>"; }
+  else {
+    const n = pts.length;
+    const sDa = pts.reduce((s,p) => s+p.da, 0), sEt = pts.reduce((s,p) => s+p.et, 0);
+    const sDE = pts.reduce((s,p) => s+p.da*p.et, 0), sDD = pts.reduce((s,p) => s+p.da*p.da, 0);
+    const den = n*sDD - sDa*sDa;
+    if (Math.abs(den) < 1e-9) daEl.innerHTML = "<span class='muted'>Not enough DA variation.</span>";
+    else {
+      const b = (n*sDE - sDa*sEt) / den;
+      const a = (sEt - b*sDa) / n;
+      const minDa = Math.min(...pts.map(p=>p.da)), maxDa = Math.max(...pts.map(p=>p.da));
+      daEl.innerHTML = `
+        <table><thead><tr><th>Runs</th><th>DA range</th><th>ET per 100 ft DA</th><th>ET at DA 0</th></tr></thead>
+        <tbody><tr><td>${n}</td><td>${minDa}–${maxDa} ft</td><td><strong>${(b*100).toFixed(3)}s</strong></td><td>${a.toFixed(3)}s</td></tr></tbody></table>
+        <p class="meta" style="margin-top:6px">${b > 0 ? "Higher DA = slower, as expected." : b < 0 ? "Odd trend (DA seems to help) – check outliers." : "No DA dependency."}</p>`;
+    }
+  }
+
+  // Track bar chart
+  const tEl = document.getElementById("trackAnalysis");
+  const byTrack = {};
+  inc.forEach(r => { const t = r.track || "–"; byTrack[t] = (byTrack[t] || 0) + 1; });
+  const entries = Object.entries(byTrack).sort((a,b) => b[1] - a[1]);
+  const max = entries.length ? entries[0][1] : 1;
+  tEl.innerHTML = entries.length
+    ? entries.map(([t, n]) => `<div class="bar-row"><span class="bar-label">${t}</span><div class="bar-track"><div class="bar-fill" style="width:${n/max*100}%"></div></div><span class="bar-val">${n}</span></div>`).join("")
+    : "<span class='muted'>No runs yet.</span>";
+}
+
+/* ============ PREDICT ============ */
+let lastPredW = null;
+async function fetchPredWeather() {
+  const track = trackByName(document.getElementById("p_track").value);
+  const slipEl = document.getElementById("predSlip");
+  slipEl.innerHTML = "<div class='timeslip'><div class='ts-header'>Predicted</div><div class='ts-row'><span class='ts-label muted'>Fetching…</span></div></div>";
+  try {
+    lastPredW = await fetchWeatherForTrack(track, null, null);
+    document.getElementById("p_da").textContent = lastPredW.da ?? "–";
+    document.getElementById("p_wind").textContent = windText(lastPredW.hw) || "–";
+    document.getElementById("p_windsub").textContent = lastPredW.hw !== null ? (lastPredW.hw > 0 ? "m/s – slower" : lastPredW.hw < 0 ? "m/s – faster" : "no wind") : "";
+    renderPrediction();
+  } catch(e) {
+    slipEl.innerHTML = "<span class='muted'>Weather fetch failed: " + e.message + "</span>";
+  }
+}
+function predFor(key, windScale) {
+  const rs = runs.filter(r => r[key] && r.include !== false);
+  if (!rs.length) return null;
+  const base = rs.reduce((s,r) => s + parseFloat(r[key]), 0) / rs.length;
+  let pred = base;
+  if (lastPredW && lastPredW.da !== null && rs[0].weather && rs[0].weather.da !== null && rs[0].weather.da !== undefined) {
+    const avgDa = rs.reduce((s,r) => s + (r.weather ? (r.weather.da || 0) : 0), 0) / rs.length;
+    const per100 = 0.01;
+    pred = base + ((lastPredW.da - avgDa) / 100) * per100;
+  }
+  if (lastPredW && lastPredW.hw !== null && lastPredW.hw !== undefined) pred += lastPredW.hw * windScale;
+  return { pred, n: rs.length };
+}
+function renderPrediction() {
+  const dists = [
+    { key:"ft60", label:"60 ft", wind:0.002, dec:3 },
+    { key:"et100", label:"330 ft", wind:0.004, dec:3 },
+    { key:"et18", label:"660 ft (1/8)", wind:0.007, dec:3 },
+    { key:"et14", label:"1320 ft (1/4)", wind:0.010, dec:3 }
+  ];
+  let rows = "";
+  dists.forEach(d => {
+    const r = predFor(d.key, d.wind);
+    rows += `<div class="ts-row${!r ? " muted" : ""}">
+      <span class="ts-label">${d.label}${r ? " (" + r.n + ")" : ""}</span>
+      <span class="ts-value">${r ? r.pred.toFixed(d.dec) : "–"}</span></div>`;
+  });
+  const p14 = predFor("et14", 0.010), p18 = predFor("et18", 0.007);
+  const dial = p14 ? p14.pred : p18 ? p18.pred : null;
+  if (dial) rows += `<div class="ts-row" style="border-top:2px solid var(--accent)"><span class="ts-label">Dial-in (+0.02)</span><span class="ts-value" style="color:var(--accent)">${(dial+0.02).toFixed(3)}</span></div>`;
+  document.getElementById("predSlip").innerHTML = "<div class='timeslip'><div class='ts-header'>Predicted time slip</div>" + rows + "</div>";
+}
+
+/* ============ DATA ============ */
+function exportData() {
+  const blob = new Blob([JSON.stringify({ app: "402Analysis", runs }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "402analysis-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();
+}
+function importData(input) {
+  const f = input.files[0]; input.value = "";
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const j = JSON.parse(r.result);
+      if (j.app !== "402Analysis" || !Array.isArray(j.runs)) throw new Error("Not a 402Analysis file.");
+      if (!confirm("Replace all data with " + j.runs.length + " runs?")) return;
+      runs = j.runs; persist(); renderRuns(); renderAnalysis();
+      alert("Imported " + runs.length + " runs.");
+    } catch(e) { alert("Import failed: " + e.message); }
+  };
+  r.readAsText(f);
+}
+function importRacingApp(input) {
+  const f = input.files[0]; input.value = "";
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const j = JSON.parse(r.result);
+      let imported = 0, skipped = 0;
+      const vehicleIds = Object.keys(j.vehicles || {});
+      if (!vehicleIds.length) throw new Error("No vehicles in backup.");
+      vehicleIds.forEach(vid => {
+        const v = j.vehicles[vid];
+        (v.runs || []).forEach(run => {
+          if (run.plain) { skipped++; return; }
+          runs.unshift({
+            date: run.date, track: run.track,
+            dial_in: run.dial_in, rt: run.rt, ft60: run.ft60,
+            et100: run.et100, et18: run.et18, et14: run.et14,
+            mph18: run.mph18, mph: run.mph,
+            include: run.include_in_pred !== false,
+            weather: run.weather || null
+          });
+          imported++;
+        });
+      });
+      persist(); renderRuns(); renderAnalysis();
+      alert("Imported " + imported + " runs from RacingApp" + (skipped ? " (" + skipped + " plain runs skipped)" : "") + ".");
+    } catch(e) { alert("Import failed: " + e.message); }
+  };
+  r.readAsText(f);
+}
+function clearData() {
+  if (confirm("Delete ALL runs permanently?")) { runs = []; persist(); renderRuns(); renderAnalysis(); }
+}
+
+/* ============ VIEWS ============ */
+function showView(v) {
+  ["log","analysis","predict","data"].forEach(k => {
+    document.getElementById("view-" + k).style.display = k === v ? "" : "none";
+    document.getElementById("vbtn-" + k).classList.toggle("active", k === v);
+  });
+  if (v === "analysis") renderAnalysis();
+  if (v === "predict") fetchPredWeather();
+}
+
+/* ============ INIT ============ */
+load();
+fillTrackSelects();
+renderRuns();
+showView("log");
+</script>
+</body>
+</html>
