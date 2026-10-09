@@ -138,6 +138,7 @@
       <div class="hero-box"><div class="hero-label">Density altitude</div><div class="hero-value" id="p_da">–</div><div class="hero-sub">ft</div></div>
       <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value" id="p_wind">–</div><div class="hero-sub" id="p_windsub"></div></div>
     </div>
+    <div class="meta" id="p_weather_full" style="margin:0 0 8px 0"></div>
     <div class="field"><label>Track</label><select id="p_track" onchange="fetchPredWeather()"></select></div>
     <div class="btnrow"><button onclick="fetchPredWeather()">🔄 Update</button></div>
   </div>
@@ -182,9 +183,14 @@
   <div class="inner">
     <h3>⏱ Add run</h3>
     <div class="grid">
-      <div class="field"><label>Date</label><input id="r_date" type="date"></div>
+      <div class="field"><label>Date</label><input id="r_date" type="date" onchange="autoWeather()"></div>
       <div class="field"><label>Track</label><select id="r_track" onchange="autoWeather()"></select></div>
     </div>
+    <div class="hero" style="margin:8px 0 10px 0">
+      <div class="hero-box"><div class="hero-label">Density altitude</div><div class="hero-value" id="r_da_hero">–</div><div class="hero-sub">ft</div></div>
+      <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value" id="r_wind_hero">–</div><div class="hero-sub" id="r_wind_sub"></div></div>
+    </div>
+    <div class="meta" id="r_weather_full" style="margin:0 0 10px 0"></div>
     <h3 style="font-size:.85rem;margin:10px 0 6px">Time slip</h3>
     <div class="timeslip" style="margin-bottom:10px">
       <div class="ts-row ts-input"><span class="ts-label">Dial-in</span><input id="r_dial" type="number" step="0.001" class="ts-field"></div>
@@ -295,12 +301,44 @@ async function fetchWeatherForTrack(track, date, hour) {
 
 /* ============ AUTO WEATHER IN MODAL ============ */
 let modalWeather = null;
+function updateRunWeatherUI(w) {
+  const daEl = document.getElementById("r_da_hero");
+  const wEl = document.getElementById("r_wind_hero");
+  const wSub = document.getElementById("r_wind_sub");
+  const full = document.getElementById("r_weather_full");
+  if (daEl) daEl.textContent = (w && w.da !== null && w.da !== undefined) ? w.da : "–";
+  if (wEl) {
+    if (!w || w.hw === null || w.hw === undefined) { wEl.textContent = "–"; if (wSub) wSub.textContent = ""; }
+    else if (Math.abs(w.hw) < 0.1) { wEl.textContent = "Calm"; if (wSub) wSub.textContent = "no wind along track"; }
+    else if (w.hw > 0) { wEl.textContent = "Headwind " + Math.abs(w.hw).toFixed(1); if (wSub) wSub.textContent = "m/s – slower run"; }
+    else { wEl.textContent = "Tailwind " + Math.abs(w.hw).toFixed(1); if (wSub) wSub.textContent = "m/s – faster run"; }
+  }
+  if (full) {
+    if (!w) { full.textContent = ""; return; }
+    const bits = [];
+    if (w.temp !== null && w.temp !== undefined) bits.push(w.temp + "°C");
+    if (w.hum !== null && w.hum !== undefined) bits.push("RH " + w.hum + "%");
+    if (w.wind !== null && w.wind !== undefined) bits.push("wind " + w.wind + " m/s");
+    if (w.windDir !== null && w.windDir !== undefined) bits.push("from " + w.windDir + "°");
+    if (w.pressure !== null && w.pressure !== undefined) bits.push(w.pressure + " hPa");
+    if (w.cond) bits.push(w.cond);
+    full.textContent = bits.join(" · ");
+  }
+}
 async function autoWeather() {
   const track = trackByName(document.getElementById("r_track").value);
   const date = document.getElementById("r_date").value;
+  const full = document.getElementById("r_weather_full");
+  if (full) full.textContent = "Fetching weather…";
   try {
-    modalWeather = await fetchWeatherForTrack(track, date, 12);
-  } catch(e) { modalWeather = null; }
+    const hour = autoWeatherHour !== null ? autoWeatherHour : 12;
+    modalWeather = await fetchWeatherForTrack(track, date, hour);
+    updateRunWeatherUI(modalWeather);
+  } catch(e) {
+    modalWeather = null;
+    updateRunWeatherUI(null);
+    if (full) full.textContent = "";
+  }
 }
 
 /* ============ SETUP CHANGES ============ */
@@ -333,6 +371,8 @@ function openRunModal() {
   modalSetupChanges = [];
   renderSetupChanges();
   modalWeather = null;
+  autoWeatherHour = null;
+  updateRunWeatherUI(null);
   autoWeather();
   document.getElementById("runModal").classList.add("open");
 }
@@ -401,7 +441,7 @@ function parsePaste() {
   }
   // Time: AM/PM or 24h
   const am = text.match(/\b(\d{1,2}):(\d{2})\s*([AaPp])/);
-  if (am) { let h = parseInt(am[1]); if (am[3].toUpperCase()==="P" && h<12) h+=12; autoWeatherHour = h; filled.push("Hour: " + h); }
+  if (am) { let h = parseInt(am[1]); if (am[3].toUpperCase()==="P" && h<12) h+=12; if (am[3].toUpperCase()==="A" && h===12) h=0; autoWeatherHour = h; filled.push("Hour: " + h + " (24h)"); }
 
   // Labeled values
   const lp = [
@@ -536,6 +576,16 @@ async function fetchPredWeather() {
     document.getElementById("p_da").textContent = lastPredW.da ?? "–";
     document.getElementById("p_wind").textContent = windText(lastPredW.hw) || "–";
     document.getElementById("p_windsub").textContent = lastPredW.hw !== null ? (lastPredW.hw > 0 ? "m/s – slower" : lastPredW.hw < 0 ? "m/s – faster" : "no wind") : "";
+    const pf = document.getElementById("p_weather_full");
+    if (pf) {
+      const bits = [];
+      if (lastPredW.temp !== null && lastPredW.temp !== undefined) bits.push(lastPredW.temp + "°C");
+      if (lastPredW.hum !== null && lastPredW.hum !== undefined) bits.push("RH " + lastPredW.hum + "%");
+      if (lastPredW.wind !== null && lastPredW.wind !== undefined) bits.push("wind " + lastPredW.wind + " m/s from " + (lastPredW.windDir ?? "?") + "°");
+      if (lastPredW.pressure !== null && lastPredW.pressure !== undefined) bits.push(lastPredW.pressure + " hPa");
+      if (lastPredW.cond) bits.push(lastPredW.cond);
+      pf.textContent = bits.join(" · ");
+    }
     renderPrediction();
   } catch(e) {
     slipEl.innerHTML = "<span class='muted'>Weather fetch failed: " + e.message + "</span>";
@@ -690,7 +740,11 @@ function showHistorySlip(runIndex) {
     <h3>⏱ ${r.date || "Run"} – ${r.track || ""}</h3>
     <div class="timeslip" style="margin:0 0 10px 0"><div class="ts-header">Time slip</div>${rows}</div>
     ${setupTxt ? `<p class="meta" style="margin:0 0 4px 0"><b>Setup:</b> ${setupTxt}</p>` : ""}
-    ${weatherTxt ? `<p class="meta" style="margin:0 0 4px 0">${weatherTxt}</p>` : ""}
+    <div class="hero" style="margin:8px 0">
+      <div class="hero-box"><div class="hero-label">Density altitude</div><div class="hero-value">${w.da ?? "–"}</div><div class="hero-sub">ft</div></div>
+      <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value">${w.hw !== null && w.hw !== undefined ? windText(w.hw) : "–"}</div><div class="hero-sub">${w.hw > 0 ? "m/s – slower" : w.hw < 0 ? "m/s – faster" : ""}</div></div>
+    </div>
+    ${weatherTxt ? `<p class="meta" style="margin:0 0 4px 0"><b>Weather:</b> ${w.temp ?? "–"}°C · RH ${w.hum ?? "–"}% · wind ${w.wind ?? "–"} m/s from ${w.windDir ?? "–"}° · ${w.cond || "–"} · ${w.pressure ?? "–"} hPa</p>` : ""}
     <div class="btnrow"><button class="ghost" onclick="this.closest('.modal').remove()">Close</button></div>
   </div>`;
   document.body.appendChild(modal);
