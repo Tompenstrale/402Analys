@@ -230,6 +230,10 @@
       <div class="field" style="flex:1;min-width:90px"><label>Value</label><input id="sc_val" placeholder="1.4"></div>
       <button class="ghost" style="padding:9px 12px" onclick="addSetupChange()">+ Add</button>
     </div>
+    <h3 style="font-size:.85rem;margin:10px 0 6px">Notes</h3>
+    <div class="field">
+      <textarea id="r_notes" rows="3" placeholder="Describe the run: notes, deviations, track conditions, anything worth remembering…" style="font-size:.88em"></textarea>
+    </div>
     <h3 style="font-size:.85rem;margin:10px 0 6px">Paste time slip text (optional)</h3>
     <div class="field">
       <textarea id="r_paste" rows="3" placeholder="Oct 9, 2026 2:35 PM&#10;R/T 0.128  60ft 1.621&#10;1/8 7.812 @ 143.6  1/4 12.205 @ 182.4" style="font-family:monospace;font-size:.82em"></textarea>
@@ -427,6 +431,7 @@ function showRunDetail(i) {
       <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value">${w.hw !== null && w.hw !== undefined ? windText(w.hw) : "–"}</div><div class="hero-sub">${w.hw > 0 ? "m/s – slower" : w.hw < 0 ? "m/s – faster" : ""}</div></div>
     </div>
     <div class="timeslip" style="margin:0 0 10px 0"><div class="ts-header">Time slip</div>${rows}</div>
+    ${r.notes ? `<p class="meta" style="margin:0 0 6px 0"><b>Notes:</b> ${r.notes}</p>` : ""}
     <p class="meta" style="margin:0 0 6px 0"><b>Setup:</b> ${setupTxt}</p>
     <p class="meta" style="margin:0 0 10px 0"><b>Weather:</b> ${weatherTxt}</p>
     <div class="btnrow">
@@ -451,6 +456,7 @@ function editRunSlip() {
   Object.entries(map).forEach(([fid, key]) => { document.getElementById(fid).value = r[key] ?? ""; });
   modalSetupChanges = (r.setup_changes || []).slice();
   renderSetupChanges();
+  document.getElementById("r_notes").value = r.notes || "";
   modalWeather = r.weather || null;
   updateRunWeatherUI(modalWeather);
   document.getElementById("runModalTitle").textContent = "✎ Edit run";
@@ -468,8 +474,11 @@ function editRunSetup() {
   Object.entries(map).forEach(([fid, key]) => { document.getElementById(fid).value = r[key] ?? ""; });
   modalSetupChanges = (r.setup_changes || []).slice();
   renderSetupChanges();
+  document.getElementById("r_notes").value = r.notes || "";
   modalWeather = r.weather || null;
   updateRunWeatherUI(modalWeather);
+  document.getElementById("runModalTitle").textContent = "✎ Edit run";
+  document.getElementById("runSaveBtn").textContent = "Save changes";
 }
 
 function closeDetail() {
@@ -504,6 +513,7 @@ function runMatchesFilter(r) {
     r.date, r.time, r.track,
     r.dial_in, r.delay_box, r.rt, r.ft60, r.et100, r.et18, r.et14, r.mph18, r.mph,
     w.temp, w.wind, w.cond,
+    r.notes,
     (r.setup_changes || []).map(sc => sc.name + " " + sc.value).join(" ")
   ].filter(Boolean).join(" ").toLowerCase();
   return hay.includes(runsSearchTerm);
@@ -514,7 +524,7 @@ function openRunModal() {
   editingRunIndex = null;
   document.getElementById("r_date").value = new Date().toISOString().slice(0,10);
   document.getElementById("r_time").value = new Date().toTimeString().slice(0,5);
-  ["r_dial","r_delaybox","r_rt","r_ft60","r_et100","r_et18","r_et14","r_mph18","r_mph","r_paste"].forEach(f => document.getElementById(f).value = "");
+  ["r_dial","r_delaybox","r_rt","r_ft60","r_et100","r_et18","r_et14","r_mph18","r_mph","r_paste","r_notes"].forEach(f => document.getElementById(f).value = "");
   modalSetupChanges = [];
   renderSetupChanges();
   modalWeather = null;
@@ -535,6 +545,7 @@ function saveRun() {
     mph18: g("r_mph18"), mph: g("r_mph"),
     include: true,
     setup_changes: modalSetupChanges,
+    notes: g("r_notes"),
     weather: modalWeather
   };
   if (!run.date) { alert("Date required."); return; }
