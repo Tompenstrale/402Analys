@@ -203,10 +203,8 @@
       <div class="ts-row ts-input"><span class="ts-label">Reaction Time</span><input id="r_rt" type="number" step="0.001" class="ts-field"></div>
       <div class="ts-row ts-input"><span class="ts-label">60 ft</span><input id="r_ft60" type="number" step="0.001" class="ts-field"></div>
       <div class="ts-row ts-input"><span class="ts-label">330 ft</span><input id="r_et100" type="number" step="0.001" class="ts-field"></div>
-      <div class="ts-row ts-input"><span class="ts-label">660 ft (1/8)</span><input id="r_et18" type="number" step="0.001" class="ts-field"></div>
-      <div class="ts-row ts-input"><span class="ts-label">660 ft Speed</span><input id="r_mph18" type="number" step="0.1" class="ts-field"></div>
-      <div class="ts-row ts-input"><span class="ts-label">1320 ft (1/4)</span><input id="r_et14" type="number" step="0.001" class="ts-field"></div>
-      <div class="ts-row ts-input"><span class="ts-label">1320 ft Speed</span><input id="r_mph" type="number" step="0.1" class="ts-field"></div>
+      <div class="ts-row ts-input"><span class="ts-label">660 ft (1/8)</span><span style="display:flex;gap:4px;flex:1"><input id="r_et18" type="number" step="0.001" class="ts-field" placeholder="s"><input id="r_mph18" type="number" step="0.1" class="ts-field" placeholder="km/h"></span></div>
+      <div class="ts-row ts-input"><span class="ts-label">1320 ft (1/4)</span><span style="display:flex;gap:4px;flex:1"><input id="r_et14" type="number" step="0.001" class="ts-field" placeholder="s"><input id="r_mph" type="number" step="0.1" class="ts-field" placeholder="km/h"></span></div>
     </div>
     <h3 style="font-size:.85rem;margin:10px 0 6px">Setup changes</h3>
     <div id="setupChanges"></div>
@@ -735,16 +733,19 @@ function showHistorySlip(runIndex) {
     { key: "rt", label: "Reaction Time" },
     { key: "ft60", label: "60 ft" },
     { key: "et100", label: "330 ft" },
-    { key: "et18", label: "660 ft (1/8)" },
-    { key: "mph18", label: "660 ft Speed" },
-    { key: "et14", label: "1320 ft (1/4)" },
-    { key: "mph", label: "1320 ft Speed" }
+    { key: "dial_in", label: "Dial-in" },
+    { key: "rt", label: "Reaction Time" },
+    { key: "ft60", label: "60 ft" },
+    { key: "et100", label: "330 ft" },
+    { key: "et18", label: "660 ft (1/8)", speedKey: "mph18" },
+    { key: "et14", label: "1320 ft (1/4)", speedKey: "mph" }
   ];
   let rows = "";
   dists.forEach(d => {
     const v = r[d.key];
-    const unit = (d.key === "mph18" || d.key === "mph") && v ? " km/h" : "";
-    rows += `<div class="ts-row${v ? "" : " muted"}"><span class="ts-label">${d.label}</span><span class="ts-value">${v ?? "–"}${unit}</span></div>`;
+    const sp = d.speedKey ? r[d.speedKey] : null;
+    const valTxt = sp ? `${v ?? "–"}/${sp} km/h` : (v ?? "–");
+    rows += `<div class="ts-row${v || sp ? "" : " muted"}"><span class="ts-label">${d.label}</span><span class="ts-value">${valTxt}</span></div>`;
   });
   const setupTxt = (r.setup_changes || []).map(sc => `<strong>${sc.name}</strong>: ${sc.value}`).join(" · ");
   const weatherTxt = w.da !== null && w.da !== undefined ? "DA " + w.da + " ft" + (w.hw !== null && w.hw !== undefined ? " · " + windText(w.hw) : "") : "";
