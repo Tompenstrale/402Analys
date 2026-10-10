@@ -105,6 +105,22 @@
     </div>
   </div>
   <div class="card">
+    <h2>Search runs</h2>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="flex:1;min-width:160px;margin-bottom:0"><label>Free text search</label><input id="runsSearch" placeholder="Date, track, ET, setup…" oninput="applyRunsFilter()"></div>
+      <div class="field" style="margin-bottom:0"><label>Show</label>
+        <select id="runsPredFilter" onchange="applyRunsFilter()">
+          <option value="all">All runs</option>
+          <option value="inc">Only included</option>
+          <option value="exc">Only excluded</option>
+        </select>
+      </div>
+      <button class="ghost" onclick="clearRunsFilter()">Clear</button>
+    </div>
+    <div class="meta" id="runsSearchMeta" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
     <h2>Recent runs</h2>
     <table>
       <thead><tr><th>Date</th><th>ET</th><th>DA</th><th>🔧</th><th>Use</th><th></th></tr></thead>
@@ -372,6 +388,38 @@ function renderSetupChanges() {
     : "";
 }
 
+/* ============ RUNS FILTER ============ */
+let runsSearchTerm = "";
+let runsFilterMode = "all";
+
+function applyRunsFilter() {
+  runsSearchTerm = (document.getElementById("runsSearch").value || "").toLowerCase().trim();
+  runsFilterMode = document.getElementById("runsPredFilter").value;
+  renderRuns();
+}
+
+function clearRunsFilter() {
+  runsSearchTerm = "";
+  runsFilterMode = "all";
+  document.getElementById("runsSearch").value = "";
+  document.getElementById("runsPredFilter").value = "all";
+  renderRuns();
+}
+
+function runMatchesFilter(r) {
+  if (runsFilterMode === "inc" && r.include === false) return false;
+  if (runsFilterMode === "exc" && r.include !== false) return false;
+  if (!runsSearchTerm) return true;
+  const w = r.weather || {};
+  const hay = [
+    r.date, r.time, r.track,
+    r.dial_in, r.delay_box, r.rt, r.ft60, r.et100, r.et18, r.et14, r.mph18, r.mph,
+    w.temp, w.wind, w.cond,
+    (r.setup_changes || []).map(sc => sc.name + " " + sc.value).join(" ")
+  ].filter(Boolean).join(" ").toLowerCase();
+  return hay.includes(runsSearchTerm);
+}
+
 /* ============ ADD RUN ============ */
 function openRunModal() {
   document.getElementById("r_date").value = new Date().toISOString().slice(0,10);
@@ -410,8 +458,23 @@ function toggleInclude(i) { runs[i].include = runs[i].include === false; persist
 function renderRuns() {
   const tb = document.getElementById("runsBody");
   tb.innerHTML = "";
-  if (!runs.length) { tb.innerHTML = "<tr><td colspan='6' class='muted'>No runs yet. Add your first time slip!</td></tr>"; return; }
-  runs.forEach((r,i) => {
+  const meta = document.getElementById("runsSearchMeta");
+  if (!runs.length) {
+    tb.innerHTML = "<tr><td colspan='6' class='muted'>No runs yet. Add your first time slip!</td></tr>";
+    if (meta) meta.textContent = "";
+    return;
+  }
+  const visible = runs.map((r,i) => ({ r, i })).filter(x => runMatchesFilter(x.r));
+  if (meta) {
+    meta.textContent = visible.length === runs.length
+      ? runs.length + " runs"
+      : visible.length + " of " + runs.length + " runs match" + (runsSearchTerm ? " \"" + runsSearchTerm + "\"" : "") + (runsFilterMode === "inc" ? " · included only" : runsFilterMode === "exc" ? " · excluded only" : "");
+  }
+  if (!visible.length) {
+    tb.innerHTML = "<tr><td colspan='6' class='muted'>No runs match the current filter.</td></tr>";
+    return;
+  }
+  visible.forEach(({ r, i }) => {
     const inc = r.include !== false;
     const da = r.weather ? r.weather.da : null;
     const tr = document.createElement("tr");
