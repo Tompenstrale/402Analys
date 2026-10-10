@@ -202,7 +202,7 @@
 <!-- RUN MODAL -->
 <div class="modal" id="runModal">
   <div class="inner">
-    <h3>⏱ Add run</h3>
+    <h3 id="runModalTitle">⏱ Add run</h3>
     <div class="grid">
       <div class="field"><label>Date</label><input id="r_date" type="date" onchange="autoWeather()"></div>
       <div class="field"><label>Time</label><input id="r_time" type="time" onchange="autoWeather()"></div>
@@ -236,7 +236,7 @@
       <button class="ghost" style="margin-top:6px" onclick="parsePaste()">📥 Import text</button>
     </div>
     <div class="btnrow">
-      <button onclick="saveRun()">Save run</button>
+      <button id="runSaveBtn" onclick="saveRun()">Save run</button>
       <button class="ghost" onclick="document.getElementById('runModal').classList.remove('open')">Cancel</button>
     </div>
   </div>
@@ -388,6 +388,95 @@ function renderSetupChanges() {
     : "";
 }
 
+/* ============ RUN DETAIL / EDIT ============ */
+let editingRunIndex = null;
+
+function showRunDetail(i) {
+  editingRunIndex = i;
+  const r = runs[i];
+  const w = r.weather || {};
+  const g = id => r[id] ?? null;
+  const dists = [
+    { key: "dial_in", label: "Dial-in" },
+    { key: "delay_box", label: "Delay Box" },
+    { key: "rt", label: "Reaction Time" },
+    { key: "ft60", label: "60 ft" },
+    { key: "et100", label: "330 ft" },
+    { key: "et18", label: "660 ft (1/8)", speedKey: "mph18" },
+    { key: "et14", label: "1320 ft (1/4)", speedKey: "mph" }
+  ];
+  let rows = "";
+  dists.forEach(d => {
+    const v = r[d.key];
+    const sp = d.speedKey ? r[d.speedKey] : null;
+    const valTxt = sp ? `${v ?? "–"}/${sp} km/h` : (v ?? "–");
+    rows += `<div class="ts-row${v || sp ? "" : " muted"}"><span class="ts-label">${d.label}</span><span class="ts-value">${valTxt}</span></div>`;
+  });
+  const setupTxt = (r.setup_changes || []).map(sc => `<strong>${sc.name}</strong>: ${sc.value}`).join(" · ") || "<span class='muted'>No setup changes on this run.</span>";
+  const weatherTxt = w.da !== null && w.da !== undefined
+    ? `DA ${w.da} ft${w.hw !== null && w.hw !== undefined ? " · " + windText(w.hw) : ""} · ${w.temp ?? "–"}°C · RH ${w.hum ?? "–"}% · wind ${w.wind ?? "–"} m/s from ${w.windDir ?? "–"}° · ${w.cond || "–"} · ${w.pressure ?? "–"} hPa`
+    : "<span class='muted'>No weather data saved.</span>";
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "runDetailModal";
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  modal.innerHTML = `<div class="inner">
+    <h3>⏱ ${r.date || "Run"} ${r.time || ""} – ${r.track || ""}</h3>
+    <div class="hero" style="margin:8px 0">
+      <div class="hero-box"><div class="hero-label">Density altitude</div><div class="hero-value">${w.da ?? "–"}</div><div class="hero-sub">ft</div></div>
+      <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value">${w.hw !== null && w.hw !== undefined ? windText(w.hw) : "–"}</div><div class="hero-sub">${w.hw > 0 ? "m/s – slower" : w.hw < 0 ? "m/s – faster" : ""}</div></div>
+    </div>
+    <div class="timeslip" style="margin:0 0 10px 0"><div class="ts-header">Time slip</div>${rows}</div>
+    <p class="meta" style="margin:0 0 6px 0"><b>Setup:</b> ${setupTxt}</p>
+    <p class="meta" style="margin:0 0 10px 0"><b>Weather:</b> ${weatherTxt}</p>
+    <div class="btnrow">
+      <button onclick="editRunSlip()">✎ Edit time slip</button>
+      <button onclick="editRunSetup()">🔧 Edit setup changes</button>
+      <button class="ghost" onclick="this.closest('.modal').remove()">Close</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.classList.add("open");
+}
+
+function editRunSlip() {
+  const r = runs[editingRunIndex];
+  closeDetail();
+  openRunModal();
+  // Fyll formuläret med repas data
+  document.getElementById("r_date").value = r.date || "";
+  document.getElementById("r_time").value = r.time || "";
+  document.getElementById("r_track").value = r.track && TRACKS.some(t => t.name === r.track) ? r.track : DEFAULT_TRACK;
+  const map = { r_dial: "dial_in", r_delaybox: "delay_box", r_rt: "rt", r_ft60: "ft60", r_et100: "et100", r_et18: "et18", r_et14: "et14", r_mph18: "mph18", r_mph: "mph" };
+  Object.entries(map).forEach(([fid, key]) => { document.getElementById(fid).value = r[key] ?? ""; });
+  modalSetupChanges = (r.setup_changes || []).slice();
+  renderSetupChanges();
+  modalWeather = r.weather || null;
+  updateRunWeatherUI(modalWeather);
+  document.getElementById("runModalTitle").textContent = "✎ Edit run";
+  document.getElementById("runSaveBtn").textContent = "Save changes";
+}
+
+function editRunSetup() {
+  const r = runs[editingRunIndex];
+  closeDetail();
+  openRunModal();
+  document.getElementById("r_date").value = r.date || "";
+  document.getElementById("r_time").value = r.time || "";
+  document.getElementById("r_track").value = r.track && TRACKS.some(t => t.name === r.track) ? r.track : DEFAULT_TRACK;
+  const map = { r_dial: "dial_in", r_delaybox: "delay_box", r_rt: "rt", r_ft60: "ft60", r_et100: "et100", r_et18: "et18", r_et14: "et14", r_mph18: "mph18", r_mph: "mph" };
+  Object.entries(map).forEach(([fid, key]) => { document.getElementById(fid).value = r[key] ?? ""; });
+  modalSetupChanges = (r.setup_changes || []).slice();
+  renderSetupChanges();
+  modalWeather = r.weather || null;
+  updateRunWeatherUI(modalWeather);
+}
+
+function closeDetail() {
+  const m = document.getElementById("runDetailModal");
+  if (m) m.remove();
+}
+
 /* ============ RUNS FILTER ============ */
 let runsSearchTerm = "";
 let runsFilterMode = "all";
@@ -422,6 +511,7 @@ function runMatchesFilter(r) {
 
 /* ============ ADD RUN ============ */
 function openRunModal() {
+  editingRunIndex = null;
   document.getElementById("r_date").value = new Date().toISOString().slice(0,10);
   document.getElementById("r_time").value = new Date().toTimeString().slice(0,5);
   ["r_dial","r_delaybox","r_rt","r_ft60","r_et100","r_et18","r_et14","r_mph18","r_mph","r_paste"].forEach(f => document.getElementById(f).value = "");
@@ -431,6 +521,8 @@ function openRunModal() {
   autoWeatherHour = null;
   document.getElementById("r_time").value = new Date().toTimeString().slice(0,5);
   updateRunWeatherUI(null);
+  document.getElementById("runModalTitle").textContent = "⏱ Add run";
+  document.getElementById("runSaveBtn").textContent = "Save run";
   autoWeather();
   document.getElementById("runModal").classList.add("open");
 }
@@ -446,10 +538,18 @@ function saveRun() {
     weather: modalWeather
   };
   if (!run.date) { alert("Date required."); return; }
-  runs.unshift(run);
+  if (editingRunIndex !== null && runs[editingRunIndex]) {
+    // Bevara include-status vid redigering
+    run.include = runs[editingRunIndex].include !== false;
+    runs[editingRunIndex] = run;
+    editingRunIndex = null;
+  } else {
+    runs.unshift(run);
+  }
   persist();
   document.getElementById("runModal").classList.remove("open");
   renderRuns();
+  renderSetupHistory();
 }
 function removeRun(i) {
   if (confirm("Delete run " + runs[i].date + "?")) { runs.splice(i,1); persist(); renderRuns(); renderSetupHistory(); }
@@ -478,13 +578,16 @@ function renderRuns() {
     const inc = r.include !== false;
     const da = r.weather ? r.weather.da : null;
     const tr = document.createElement("tr");
+    tr.style.cursor = "pointer";
+    tr.title = "Click to view / edit run";
+    tr.onclick = (e) => { if (!e.target.closest("button")) showRunDetail(i); };
     tr.innerHTML = `
       <td>${r.date || "–"}${r.time ? ` <span class="muted" style="font-size:.76rem">${r.time}</span>` : ""}</td>
       <td><strong>${r.et14 ?? r.et18 ?? r.et100 ?? "–"}</strong></td>
       <td>${da !== null && da !== undefined ? da + " ft" : "–"}</td>
-      <td>${(r.setup_changes && r.setup_changes.length) ? "<span title='" + r.setup_changes.map(sc => sc.name + ": " + sc.value).join(" · ") + "'>🔧 " + r.setup_changes.length + "</span>" : ""}</td>
-      <td><button class="pill ${inc ? 'ok' : 'no'}" onclick="toggleInclude(${i})">${inc ? "Yes" : "No"}</button></td>
-      <td><button class="del" onclick="removeRun(${i})">✕</button></td>`;
+      <td>${(r.setup_changes && r.setup_changes.length) ? "🔧 " + r.setup_changes.length : ""}</td>
+      <td><button class="pill ${inc ? 'ok' : 'no'}" onclick="event.stopPropagation(); toggleInclude(${i})">${inc ? "Yes" : "No"}</button></td>
+      <td><button class="del" onclick="event.stopPropagation(); removeRun(${i})">✕</button></td>`;
     tb.appendChild(tr);
   });
 }
