@@ -31,11 +31,11 @@
   .bottomnav .navbtn:hover { background: var(--card2); }
   .bottomnav .navbtn.active { border-color: var(--gold); color: var(--text); text-shadow: 0 0 8px var(--gold-glow); background: rgba(212,175,55,.18); box-shadow: 0 0 10px var(--gold-glow); }
   .bottomnav .navlogo {
-    width: 46px; height: 46px; border-radius: 16px; border: none; background: transparent;
+    width: 58px; height: 58px; border-radius: 18px; border: none; background: transparent;
     cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
     margin-left: 6px;
   }
-  .bottomnav .navlogo img { width: 34px; height: 34px; object-fit: contain; border-radius: 6px; }
+  .bottomnav .navlogo img { width: 46px; height: 46px; object-fit: contain; border-radius: 8px; }
   body { padding-bottom: 90px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--text); text-transform: uppercase; letter-spacing: .05em; text-shadow: 0 1px 0 var(--gold), 0 0 9px var(--gold-glow); }
@@ -84,15 +84,15 @@
 </head>
 <body>
 
-<h1>🏁 402 <span class="num">Analysis</span></h1>
-<div class="subtitle">Log time slips · analyze · predict with current weather</div>
+<h1><img src="logo.png?v=3" alt="Logo" style="height:1.15em; vertical-align:-0.18em; border-radius:4px" onerror="this.style.display='none'"> 402 <span class="num">Analysis</span></h1>
+
 
 <div class="bottomnav">
   <button class="navbtn active" id="vbtn-log" onclick="showView('log')" title="Log">🧾</button>
   <button class="navbtn" id="vbtn-analysis" onclick="showView('analysis')" title="Analysis">📊</button>
   <button class="navbtn" id="vbtn-predict" onclick="showView('predict')" title="Predict">🎯</button>
   <button class="navbtn" id="vbtn-data" onclick="showView('data')" title="Data">💾</button>
-  <button class="navlogo" onclick="logoClick()" title="lindbladracing.se"><img src="logo.png?v=2" alt="Logo" width="34" height="34" onerror="this.style.display='none'; this.parentElement.innerHTML='🏁'; this.parentElement.style.fontSize='1.25rem';"></button>
+  <button class="navlogo" onclick="logoClick()" title="lindbladracing.se"><img src="logo.png?v=3" alt="Logo"></button>
 </div>
 
 <!-- LOG -->
