@@ -7,13 +7,13 @@
 <style>
   :root {
     --bg: #f2f4f7; --card: #ffffff; --card2: #e9edf2; --border: #c4ccd6;
-    --text: #1a2430; --muted: #5a6a7a; --accent: #d99e00; --ok: #1e9e63;
+    --text: #1a1a1a; --muted: #5a6a7a; --accent: #c9a227; --gold: #d4af37; --gold-deep: #b8860b; --gold-glow: rgba(212,175,55,.55); --ok: #1e9e63;
     --warn: #c07f00; --danger: #d93333;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 16px; max-width: 900px; margin: 0 auto; }
   h1 { font-size: 1.35rem; margin-bottom: 2px; }
-  h1 .num { color: var(--accent); }
+  h1 .num { color: var(--text); text-shadow: 0 1px 0 var(--gold), 0 0 10px var(--gold-glow); }
   .subtitle { color: var(--muted); font-size: 0.82rem; margin-bottom: 16px; }
   .bottomnav {
     position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
@@ -29,24 +29,24 @@
     font-size: 1.25rem; line-height: 1; padding: 0;
   }
   .bottomnav .navbtn:hover { background: var(--card2); }
-  .bottomnav .navbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(217,158,0,.12); }
+  .bottomnav .navbtn.active { border-color: var(--gold); color: var(--text); text-shadow: 0 0 8px var(--gold-glow); background: rgba(212,175,55,.18); box-shadow: 0 0 10px var(--gold-glow); }
   .bottomnav .navlogo {
-    width: 46px; height: 46px; border-radius: 16px; border: none; background: transparent;
+    width: 58px; height: 58px; border-radius: 18px; border: none; background: transparent;
     cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
     margin-left: 6px;
   }
-  .bottomnav .navlogo img { width: 34px; height: 34px; object-fit: contain; border-radius: 6px; }
+  .bottomnav .navlogo img { width: 46px; height: 46px; object-fit: contain; border-radius: 8px; }
   body { padding-bottom: 90px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+  .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--text); text-transform: uppercase; letter-spacing: .05em; text-shadow: 0 1px 0 var(--gold), 0 0 9px var(--gold-glow); }
   .field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
   .field label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .field input, .field select, .field textarea { background: var(--card2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 9px; font-size: 0.9rem; width: 100%; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
   .btnrow { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
-  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  button:hover { filter: brightness(1.08); }
+  button { background: #1c1c1c; color: var(--gold); border: 1px solid #333; border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,.25); text-shadow: 0 0 6px var(--gold-glow); }
+  button.ghost { background: #111; color: var(--gold); border: 1px solid #2e2e2e; text-shadow: 0 0 5px var(--gold-glow); box-shadow: none; }
+  button:hover { border-color: var(--gold); box-shadow: 0 0 8px var(--gold-glow); }
   .meta { color: var(--muted); font-size: 0.78rem; }
   table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
   th { text-align: left; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
@@ -57,22 +57,22 @@
   .pill.no { background: rgba(90,106,122,.1); color: var(--muted); border: 1px solid var(--border); }
   .del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.95rem; padding: 1px 5px; }
   .muted { color: var(--muted); }
-  .timeslip { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 5px 12px; margin: 0 0 10px 0; max-width: 320px; }
+  .timeslip { background: var(--card2); border: 1px solid var(--gold); border-radius: 10px; padding: 5px 12px; margin: 0 0 10px 0; max-width: 320px; box-shadow: 0 2px 10px var(--gold-glow); }
   .timeslip .ts-row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; border-bottom: 1px dashed var(--border); }
   .timeslip .ts-row:last-child { border-bottom: none; }
   .timeslip .ts-label { font-size: 0.76rem; color: var(--text); font-weight: 600; }
   .timeslip .ts-value { font-size: 1rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-  .timeslip .ts-header { text-align: center; font-size: 0.63rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 3px; border-bottom: 1px solid var(--border); margin-bottom: 1px; }
+  .timeslip .ts-header { text-align: center; font-size: 0.63rem; color: var(--text); font-weight: 700; text-shadow: 0 0 6px var(--gold-glow); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 3px; border-bottom: 1px solid var(--gold); margin-bottom: 1px; }
   .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-  .hero .hero-box { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 12px; text-align: center; }
+  .hero .hero-box { background: var(--card2); border: 1px solid var(--gold); border-radius: 10px; padding: 8px 12px; text-align: center; box-shadow: 0 2px 10px var(--gold-glow); }
   .hero .hero-label { font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-  .hero .hero-value { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+  .hero .hero-value { font-size: 1.3rem; font-weight: 700; color: var(--text); text-shadow: 0 1px 0 var(--gold), 0 0 10px var(--gold-glow); }
   .hero .hero-sub { font-size: 0.7rem; color: var(--muted); }
   .bar-chart { margin-top: 6px; }
   .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
   .bar-label { flex: 0 0 90px; font-size: 0.78rem; text-align: right; }
   .bar-track { flex: 1; background: var(--card2); border-radius: 4px; height: 18px; position: relative; }
-  .bar-fill { background: var(--accent); border-radius: 4px; height: 100%; }
+  .bar-fill { background: linear-gradient(180deg, #e6c96a, var(--gold) 55%, var(--gold-deep)); border-radius: 4px; height: 100%; box-shadow: 0 0 6px var(--gold-glow); }
   .bar-val { font-size: 0.76rem; font-variant-numeric: tabular-nums; min-width: 52px; }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; padding: 48px 12px 12px; z-index: 100; }
   .modal.open { display: flex; }
@@ -84,15 +84,15 @@
 </head>
 <body>
 
-<h1>🏁 402 <span class="num">Analysis</span></h1>
-<div class="subtitle">Log time slips · analyze · predict with current weather</div>
+<h1><img src="logo.png?v=3" alt="Logo" style="height:1.15em; vertical-align:-0.18em; border-radius:4px" onerror="this.style.display='none'"> 402 <span class="num">Analysis</span></h1>
+
 
 <div class="bottomnav">
   <button class="navbtn active" id="vbtn-log" onclick="showView('log')" title="Log">🧾</button>
   <button class="navbtn" id="vbtn-analysis" onclick="showView('analysis')" title="Analysis">📊</button>
   <button class="navbtn" id="vbtn-predict" onclick="showView('predict')" title="Predict">🎯</button>
   <button class="navbtn" id="vbtn-data" onclick="showView('data')" title="Data">💾</button>
-  <button class="navlogo" onclick="logoClick()" title="lindbladracing.se"><img src="logo.png?v=2" alt="Logo" width="34" height="34" onerror="this.style.display='none'; this.parentElement.innerHTML='🏁'; this.parentElement.style.fontSize='1.25rem';"></button>
+  <button class="navlogo" onclick="logoClick()" title="lindbladracing.se"><img src="logo.png?v=3" alt="Logo"></button>
 </div>
 
 <!-- LOG -->
@@ -181,6 +181,23 @@
     </div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
   </div>
+  <div class="card" id="cardCloud">
+    <h2>☁ GitHub sync</h2>
+    <p class="meta" style="margin:0 0 10px 0">Sync the runs database to a JSON file in a GitHub repository. Auto-pull on app start, auto-push after changes. Last push wins – always pull before editing on a new device. The token is stored only on this device.</p>
+    <div class="grid">
+      <div class="field"><label>Repository (owner/name)</label><input id="cloud_repo" placeholder="Tompenstrale/402Analys"></div>
+      <div class="field"><label>Branch</label><input id="cloud_branch" placeholder="main"></div>
+      <div class="field"><label>File path in repo</label><input id="cloud_path" placeholder="data/402analysis-data.json"></div>
+      <div class="field"><label>Token (fine-grained PAT, Contents: RW)</label><input id="cloud_token" type="password" placeholder="github_pat_…"></div>
+      <div class="field"><label>Auto-sync</label><select id="cloud_auto"><option value="on">On – auto-pull on start, auto-push on change</option><option value="off">Off – manual push/pull only</option></select></div>
+    </div>
+    <div class="btnrow" style="margin-top:14px">
+      <button onclick="pushToCloud()">☁ Push to GitHub</button>
+      <button class="ghost" onclick="pullFromCloud()">☁ Pull from GitHub</button>
+      <button class="ghost" onclick="saveCloudConfig()">Save settings</button>
+    </div>
+    <div class="meta" id="cloudStatus" style="margin-top:10px"></div>
+  </div>
   <div class="card">
     <h2>Import from RacingApp</h2>
     <p class="meta" style="margin:0 0 10px 0">Load a RacingApp backup file to bring over all runs with weather data.</p>
@@ -251,8 +268,148 @@
 const LS = "analysis402.runs";
 let runs = [];
 function load() { try { runs = JSON.parse(localStorage.getItem(LS)) || []; } catch(e) { runs = []; } }
-function persist() { localStorage.setItem(LS, JSON.stringify(runs)); }
+function persist() { localStorage.setItem(LS, JSON.stringify(runs)); if (typeof autoPush === "function") autoPush(); }
 function save() { persist(); }
+const LS_VIEW = "analysis402.lastView";
+function persistLastView(v) { try { localStorage.setItem(LS_VIEW, v); } catch(e) {} }
+function getLastView() { try { return localStorage.getItem(LS_VIEW) || null; } catch(e) { return null; } }
+/* ============ CLOUD SYNC ============ */
+const LS_CLOUD = "analysis402.cloud";
+function readCloudInputs() {
+  return {
+    repo: document.getElementById("cloud_repo").value.trim(),
+    branch: document.getElementById("cloud_branch").value.trim() || "main",
+    path: document.getElementById("cloud_path").value.trim() || "data/402analysis-data.json",
+    token: document.getElementById("cloud_token").value.trim(),
+    auto: document.getElementById("cloud_auto").value
+  };
+}
+function readCloudConfig() {
+  try { return JSON.parse(localStorage.getItem(LS_CLOUD)) || {}; } catch(e) { return {}; }
+}
+function saveCloudConfig() {
+  const cfg = readCloudInputs();
+  localStorage.setItem(LS_CLOUD, JSON.stringify(cfg));
+  const el = document.getElementById("cloudStatus");
+  if (el) el.textContent = "✓ Settings saved " + new Date().toLocaleTimeString();
+}
+function fillCloudInputs() {
+  const cfg = readCloudConfig();
+  document.getElementById("cloud_repo").value = cfg.repo || "";
+  document.getElementById("cloud_branch").value = cfg.branch || "main";
+  document.getElementById("cloud_path").value = cfg.path || "data/402analysis-data.json";
+  document.getElementById("cloud_token").value = cfg.token || "";
+  document.getElementById("cloud_auto").value = cfg.auto || "on";
+}
+function cloudStatus(msg) {
+  const el = document.getElementById("cloudStatus");
+  if (el) el.textContent = msg;
+}
+function b64encodeUtf8(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64decodeUtf8(b64) {
+  const bin = atob(b64.replace(/\n/g, ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function ghApi(path, opts) {
+  const cfg = readCloudInputs();
+  if (!cfg.repo || !cfg.token) throw new Error("Repository and token are required.");
+  return fetch("https://api.github.com" + path, {
+    ...opts,
+    headers: {
+      "Authorization": "Bearer " + cfg.token,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      ...(opts.headers || {})
+    }
+  }).then(async r => {
+    if (!r.ok) {
+      let msg = r.status + " " + r.statusText;
+      try { const j = await r.json(); if (j.message) msg = j.message; } catch(e) {}
+      throw new Error(msg);
+    }
+    return r.json();
+  });
+}
+function buildSyncPayload() {
+  return { app: "402Analysis", version: 2, pushed: new Date().toISOString(), runs };
+}
+async function pushToCloud() {
+  try {
+    cloudStatus("Pushing…");
+    const cfg = readCloudInputs();
+    const payload = buildSyncPayload();
+    const b64 = b64encodeUtf8(JSON.stringify(payload));
+    let sha = null;
+    try {
+      const existing = await ghApi("/repos/" + cfg.repo + "/contents/" + cfg.path + "?ref=" + encodeURIComponent(cfg.branch), { method: "GET" });
+      sha = existing.sha;
+    } catch (e) {
+      if (!/404|Not Found/i.test(e.message)) throw e;
+    }
+    await ghApi("/repos/" + cfg.repo + "/contents/" + cfg.path, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: "402Analysis data sync " + new Date().toISOString().slice(0, 16).replace("T", " "),
+        content: b64,
+        branch: cfg.branch,
+        ...(sha ? { sha } : {})
+      })
+    });
+    localStorage.setItem(LS_CLOUD, JSON.stringify(cfg));
+    cloudStatus("✓ Pushed " + runs.length + " runs " + new Date().toLocaleTimeString());
+  } catch (e) {
+    cloudStatus("✕ Push failed: " + e.message);
+  }
+}
+async function pullFromCloud(silent) {
+  try {
+    if (!silent) cloudStatus("Pulling…");
+    const cfg = readCloudInputs();
+    const res = await ghApi("/repos/" + cfg.repo + "/contents/" + cfg.path + "?ref=" + encodeURIComponent(cfg.branch), { method: "GET" });
+    const payload = JSON.parse(b64decodeUtf8(res.content));
+    if (payload.app !== "402Analysis" || !Array.isArray(payload.runs)) throw new Error("The cloud file is not valid 402Analysis data.");
+    if (!silent && !confirm("This replaces all local runs with the cloud version (" + payload.runs.length + " runs, pushed " + (payload.pushed || "?") + ").\nUnsaved local changes will be lost. Continue?")) {
+      cloudStatus("Pull cancelled.");
+      return false;
+    }
+    localStorage.setItem(LS_CLOUD, JSON.stringify(cfg));
+    runs = payload.runs;
+    pullingFromCloud = true;
+    persist();
+    pullingFromCloud = false;
+    renderRuns(); renderAnalysis(); renderSetupHistory();
+    const m = document.getElementById("emptyDbModal");
+    if (m) m.remove();
+    cloudStatus("✓ Pulled " + runs.length + " runs " + new Date().toLocaleTimeString());
+    return true;
+  } catch (e) {
+    if (!silent || !/404|Not Found/i.test(e.message)) cloudStatus("✕ Pull failed: " + e.message);
+    return false;
+  }
+}
+let pushTimer = null, pullingFromCloud = false;
+function autoPush() {
+  if (pullingFromCloud) return;
+  const cfg = readCloudConfig();
+  if ((cfg.auto || "on") !== "on") return;
+  if (!cfg.repo || !cfg.token) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushToCloud, 3000);
+}
+async function autoPullOnStart() {
+  const cfg = readCloudConfig();
+  if ((cfg.auto || "on") !== "on") return;
+  if (!cfg.repo || !cfg.token) return;
+  const ok = await pullFromCloud(true);
+  if (ok) cloudStatus("✓ Auto-pulled " + runs.length + " runs from GitHub on start");
+}
 
 /* ============ TRACKS ============ */
 const TRACKS = [
@@ -812,7 +969,7 @@ function renderPrediction() {
   });
   const p14 = predFor("et14", 0.010), p18 = predFor("et18", 0.007);
   const dial = p14 ? p14.pred : p18 ? p18.pred : null;
-  if (dial) rows += `<div class="ts-row" style="border-top:2px solid var(--accent)"><span class="ts-label">Dial-in (+0.02)</span><span class="ts-value" style="color:var(--accent)">${(dial+0.02).toFixed(3)}</span></div>`;
+  if (dial) rows += `<div class="ts-row" style="border-top:2px solid var(--accent)"><span class="ts-label">Dial-in (+0.02)</span><span class="ts-value" style="color:var(--text); text-shadow:0 1px 0 var(--gold), 0 0 8px var(--gold-glow)">${(dial+0.02).toFixed(3)}</span></div>`;
   document.getElementById("predSlip").innerHTML = "<div class='timeslip'><div class='ts-header'>Predicted time slip</div>" + rows + "</div>";
 }
 
@@ -833,7 +990,7 @@ function importData(input) {
       const j = JSON.parse(r.result);
       if (j.app !== "402Analysis" || !Array.isArray(j.runs)) throw new Error("Not a 402Analysis file.");
       if (!confirm("Replace all data with " + j.runs.length + " runs?")) return;
-      runs = j.runs; persist(); renderRuns(); renderAnalysis();
+      runs = j.runs; persist(); onDbLoaded();
       alert("Imported " + runs.length + " runs.");
     } catch(e) { alert("Import failed: " + e.message); }
   };
@@ -864,7 +1021,7 @@ function importRacingApp(input) {
           imported++;
         });
       });
-      persist(); renderRuns(); renderAnalysis();
+      persist(); onDbLoaded();
       alert("Imported " + imported + " runs from RacingApp" + (skipped ? " (" + skipped + " plain runs skipped)" : "") + ".");
     } catch(e) { alert("Import failed: " + e.message); }
   };
@@ -945,6 +1102,7 @@ function showHistorySlip(runIndex) {
 
 /* ============ VIEWS ============ */
 function showView(v) {
+  persistLastView(v);
   ["log","analysis","predict","data"].forEach(k => {
     document.getElementById("view-" + k).style.display = k === v ? "" : "none";
     document.getElementById("vbtn-" + k).classList.toggle("active", k === v);
@@ -990,7 +1148,39 @@ document.addEventListener("touchend", (e) => {
 load();
 fillTrackSelects();
 renderRuns();
-showView("log");
+const lastView = getLastView();
+showView(["log","analysis","predict","data"].includes(lastView) ? lastView : "log");
+fillCloudInputs();
+const cloudCfg = readCloudConfig();
+if (cloudCfg.repo && cloudCfg.token && (cloudCfg.auto || "on") === "on") {
+  autoPullOnStart().then(() => { if (!runs.length) showEmptyDbDialog(); });
+} else if (!runs.length) {
+  showEmptyDbDialog();
+}
+function showEmptyDbDialog() {
+  const existing = document.getElementById("emptyDbModal");
+  if (existing) existing.remove();
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "emptyDbModal";
+  const cloudReady = !!(cloudCfg.repo && cloudCfg.token);
+  modal.innerHTML = `<div class="inner">
+    <h3>💾 Ingen data laddad</h3>
+    <p class="meta" style="margin:0 0 14px 0">Det finns ingen databas med runs i appen just nu. Hämta en tidigare exporterad databas eller börja lägga till runs direkt.</p>
+    <div class="btnrow">
+      ${cloudReady ? `<button onclick="pullFromCloud(); this.closest('.modal').remove()">☁ Hämta från GitHub</button>` : ""}
+      <button onclick="document.getElementById('importFile').click(); this.closest('.modal').remove()">📥 Hämta databasfil</button>
+      <button class="ghost" onclick="this.closest('.modal').remove()">Börja utan data</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.classList.add("open");
+}
+function onDbLoaded() {
+  const m = document.getElementById("emptyDbModal");
+  if (m) m.remove();
+  renderRuns(); renderAnalysis(); renderSetupHistory();
+}
 </script>
 </body>
 </html>
