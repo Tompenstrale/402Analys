@@ -137,8 +137,10 @@
   </div>
   <div class="card">
     <h2>ET vs density altitude</h2>
-    <p class="meta" style="margin:0 0 8px 0">How much does DA affect your 1320 ft ET?</p>
+    <p class="meta" style="margin:0 0 8px 0">How DA affects your 1320 ft ET. The curve adapts to how the car responds at different DA levels. Move over the graph to read DA/ET values.</p>
     <div id="daAnalysis"></div>
+    <div id="daGraphWrap" style="margin-top:8px"></div>
+    <div class="meta" id="daGraphReadout" style="margin-top:6px;min-height:1.1em"></div>
   </div>
   <div class="card" id="setupCompareCard">
     <h2>Setup changes comparison</h2>
@@ -828,6 +830,122 @@ function parsePaste() {
 let autoWeatherHour = null;
 
 /* ============ ANALYSIS ============ */
+/* ============ DA vs ET GRAPH ============ */
+function daSolve(A, b) {
+  const n = A.length;
+  for (let i = 0; i < n; i++) {
+    let piv = i;
+    for (let r = i+1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+    [A[i], A[piv]] = [A[piv], A[i]];
+    [b[i], b[piv]] = [b[piv], b[i]];
+    for (let r = i+1; r < n; r++) {
+      const f = A[r][i] / A[i][i];
+      for (let c = i; c < n; c++) A[r][c] -= f * A[i][c];
+      b[r] -= f * b[i];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n-1; i >= 0; i--) {
+    let sum = b[i];
+    for (let c = i+1; c < n; c++) sum -= A[i][c] * x[c];
+    x[i] = sum / A[i][i];
+  }
+  return x;
+}
+function daFitPoly(pts) {
+  let order = Math.min(3, pts.length - 1);
+  while (order >= 1) {
+    const A = [], b = [];
+    for (let i = 0; i <= order; i++) { A.push(new Array(order+1).fill(0)); b.push(0); }
+    pts.forEach(p => {
+      const xs = [1, p.da, p.da*p.da, p.da*p.da*p.da];
+      for (let i = 0; i <= order; i++) {
+        b[i] += xs[i] * p.et;
+        for (let j = 0; j <= order; j++) A[i][j] += xs[i] * xs[j];
+      }
+    });
+    const coefs = daSolve(A, b);
+    if (coefs.every(isFinite)) return coefs;
+    order--;
+  }
+  return null;
+}
+function daEtAt(coefs, da) {
+  return coefs[0] + coefs[1]*da + (coefs[2]||0)*da*da + (coefs[3]||0)*da*da*da;
+}
+function renderDaGraph(pts, wrapEl, readEl) {
+  const W = 640, H = 320, P = { l: 56, r: 16, t: 14, b: 34 };
+  const coefs = daFitPoly(pts);
+  if (!coefs || !wrapEl) return;
+  const minDa = Math.min(...pts.map(p => p.da)), maxDa = Math.max(...pts.map(p => p.da));
+  const padDa = (maxDa - minDa) * 0.08 || 200;
+  const x0 = minDa - padDa, x1 = maxDa + padDa;
+  const ets = pts.map(p => p.et);
+  for (let i = 0; i <= 40; i++) ets.push(daEtAt(coefs, x0 + (x1-x0)*i/40));
+  let yLo = Math.min(...ets), yHi = Math.max(...ets);
+  const padY = (yHi - yLo) * 0.12 || 0.05;
+  const y0 = yLo - padY, y1 = yHi + padY;
+  const X = da => P.l + (da - x0) / (x1 - x0) * (W - P.l - P.r);
+  const Y = et => H - P.b - (et - y0) / (y1 - y0) * (H - P.t - P.b);
+  let ticksX = "", ticksY = "";
+  const stepX = Math.max(200, Math.round((x1 - x0) / 6 / 100) * 100);
+  for (let da = Math.ceil(x0/stepX)*stepX; da <= x1; da += stepX)
+    ticksX += `<line x1="${X(da)}" y1="${H-P.b}" x2="${X(da)}" y2="${P.t}" stroke="#c4ccd6" stroke-dasharray="3 4" opacity="0.5"/><text x="${X(da)}" y="${H-10}" text-anchor="middle" font-size="11" fill="#5a6a7a">${Math.round(da)}</text>`;
+  const stepY = Math.max(0.01, (y1 - y0) / 5);
+  for (let et = Math.ceil(y0/stepY)*stepY; et <= y1; et += stepY)
+    ticksY += `<line x1="${P.l}" y1="${Y(et)}" x2="${W-P.r}" y2="${Y(et)}" stroke="#c4ccd6" stroke-dasharray="3 4" opacity="0.5"/><text x="${P.l-6}" y="${Y(et)+4}" text-anchor="end" font-size="11" fill="#5a6a7a">${et.toFixed(3)}</text>`;
+  let path = "";
+  for (let i = 0; i <= 120; i++) {
+    const da = x0 + (x1 - x0) * i / 120;
+    path += (i ? "L" : "M") + X(da).toFixed(1) + " " + Y(daEtAt(coefs, da)).toFixed(1);
+  }
+  const dots = pts.map(p => `<circle cx="${X(p.da).toFixed(1)}" cy="${Y(p.et).toFixed(1)}" r="4" fill="#d4af37" stroke="#1a1a1a" stroke-width="1"><title>DA ${p.da} ft \u00b7 ET ${p.et.toFixed(3)}s</title></circle>`).join("");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width", "100%");
+  svg.style.display = "block";
+  svg.innerHTML = `
+    <g>${ticksX}${ticksY}</g>
+    <line x1="${P.l}" y1="${H-P.b}" x2="${W-P.r}" y2="${H-P.b}" stroke="#c4ccd6"/>
+    <line x1="${P.l}" y1="${P.t}" x2="${P.l}" y2="${H-P.b}" stroke="#c4ccd6"/>
+    <text x="${(W+P.l)/2}" y="${H-2}" text-anchor="middle" font-size="11" fill="#5a6a7a">Density altitude (ft)</text>
+    <text x="12" y="${(H-P.b+P.t)/2}" text-anchor="middle" font-size="11" fill="#5a6a7a" transform="rotate(-90 12 ${(H-P.b+P.t)/2})">ET 1320 ft (s)</text>
+    <path d="${path}" fill="none" stroke="#1a1a1a" stroke-width="2.5" style="filter:drop-shadow(0 0 4px rgba(212,175,55,.55))"/>
+    ${dots}`;
+  const cross = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  cross.setAttribute("stroke", "#1a1a1a");
+  cross.setAttribute("stroke-width", "1.2");
+  cross.setAttribute("stroke-dasharray", "4 3");
+  cross.style.display = "none";
+  svg.appendChild(cross);
+  const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  dot.setAttribute("r", "6");
+  dot.setAttribute("fill", "#1a1a1a");
+  dot.setAttribute("stroke", "#d4af37");
+  dot.setAttribute("stroke-width", "2");
+  dot.style.display = "none";
+  svg.appendChild(dot);
+  wrapEl.appendChild(svg);
+  const readout = e => {
+    const r = svg.getBoundingClientRect();
+    const px = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const t = Math.min(1, Math.max(0, (px / r.width * W - P.l) / (W - P.l - P.r)));
+    const da = x0 + (x1 - x0) * t;
+    const et = daEtAt(coefs, da);
+    cross.setAttribute("x1", X(da)); cross.setAttribute("y1", P.t);
+    cross.setAttribute("x2", X(da)); cross.setAttribute("y2", H - P.b);
+    cross.style.display = "";
+    dot.setAttribute("cx", X(da)); dot.setAttribute("cy", Y(et));
+    dot.style.display = "";
+    if (readEl) readEl.innerHTML = `<strong>DA ${Math.round(da)} ft</strong> \u00b7 predicted ET <strong>${et.toFixed(3)}s</strong> (1320 ft)`;
+  };
+  svg.addEventListener("mousemove", readout);
+  svg.addEventListener("touchmove", e => { e.preventDefault(); readout(e); }, { passive: false });
+  svg.addEventListener("touchstart", readout, { passive: true });
+  svg.addEventListener("click", readout);
+  svg.addEventListener("mouseleave", () => { cross.style.display = "none"; dot.style.display = "none"; if (readEl) readEl.textContent = ""; });
+}
+
 function renderAnalysis() {
   const inc = runs.filter(r => r.include !== false);
   // PB
@@ -851,27 +969,18 @@ function renderAnalysis() {
   });
   if (!any) pb.innerHTML = "<tr><td class='muted'>No included runs yet.</td></tr>";
 
-  // DA regression
+  // DA regression + interactive graph
   const daEl = document.getElementById("daAnalysis");
+  const wrapEl = document.getElementById("daGraphWrap");
+  const readEl = document.getElementById("daGraphReadout");
+  if (wrapEl) wrapEl.innerHTML = "";
+  if (readEl) readEl.textContent = "";
   const pts = inc.filter(r => r.et14 && r.weather && r.weather.da != null).map(r => ({ da: r.weather.da, et: parseFloat(r.et14) }));
   if (pts.length < 2) { daEl.innerHTML = "<span class='muted'>Need 2+ included 1320 ft runs with weather.</span>"; }
   else {
-    const n = pts.length;
-    const sDa = pts.reduce((s,p) => s+p.da, 0), sEt = pts.reduce((s,p) => s+p.et, 0);
-    const sDE = pts.reduce((s,p) => s+p.da*p.et, 0), sDD = pts.reduce((s,p) => s+p.da*p.da, 0);
-    const den = n*sDD - sDa*sDa;
-    if (Math.abs(den) < 1e-9) daEl.innerHTML = "<span class='muted'>Not enough DA variation.</span>";
-    else {
-      const b = (n*sDE - sDa*sEt) / den;
-      const a = (sEt - b*sDa) / n;
-      const minDa = Math.min(...pts.map(p=>p.da)), maxDa = Math.max(...pts.map(p=>p.da));
-      daEl.innerHTML = `
-        <table><thead><tr><th>Runs</th><th>DA range</th><th>ET per 100 ft DA</th><th>ET at DA 1000</th></tr></thead>
-        <tbody><tr><td>${n}</td><td>${minDa}–${maxDa} ft</td><td><strong>${(b*100).toFixed(3)}s</strong></td><td>${(a + b * 1000).toFixed(3)}s</td></tr></tbody></table>
-        <p class="meta" style="margin-top:6px">${b > 0 ? "Higher DA = slower, as expected." : b < 0 ? "Odd trend (DA seems to help) – check outliers." : "No DA dependency."}</p>`;
-    }
+    daEl.innerHTML = `<table><thead><tr><th>Runs</th><th>DA range</th></tr></thead><tbody><tr><td>${pts.length}</td><td>${Math.min(...pts.map(p=>p.da))}–${Math.max(...pts.map(p=>p.da))} ft</td></tr></tbody></table>`;
+    renderDaGraph(pts, wrapEl, readEl);
   }
-
   // Setup comparison
   const sEl = document.getElementById("setupAnalysis");
   const groups = {};
