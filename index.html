@@ -253,6 +253,9 @@ let runs = [];
 function load() { try { runs = JSON.parse(localStorage.getItem(LS)) || []; } catch(e) { runs = []; } }
 function persist() { localStorage.setItem(LS, JSON.stringify(runs)); }
 function save() { persist(); }
+const LS_VIEW = "analysis402.lastView";
+function persistLastView(v) { try { localStorage.setItem(LS_VIEW, v); } catch(e) {} }
+function getLastView() { try { return localStorage.getItem(LS_VIEW) || null; } catch(e) { return null; } }
 
 /* ============ TRACKS ============ */
 const TRACKS = [
@@ -833,7 +836,7 @@ function importData(input) {
       const j = JSON.parse(r.result);
       if (j.app !== "402Analysis" || !Array.isArray(j.runs)) throw new Error("Not a 402Analysis file.");
       if (!confirm("Replace all data with " + j.runs.length + " runs?")) return;
-      runs = j.runs; persist(); renderRuns(); renderAnalysis();
+      runs = j.runs; persist(); onDbLoaded();
       alert("Imported " + runs.length + " runs.");
     } catch(e) { alert("Import failed: " + e.message); }
   };
@@ -864,7 +867,7 @@ function importRacingApp(input) {
           imported++;
         });
       });
-      persist(); renderRuns(); renderAnalysis();
+      persist(); onDbLoaded();
       alert("Imported " + imported + " runs from RacingApp" + (skipped ? " (" + skipped + " plain runs skipped)" : "") + ".");
     } catch(e) { alert("Import failed: " + e.message); }
   };
@@ -945,6 +948,7 @@ function showHistorySlip(runIndex) {
 
 /* ============ VIEWS ============ */
 function showView(v) {
+  persistLastView(v);
   ["log","analysis","predict","data"].forEach(k => {
     document.getElementById("view-" + k).style.display = k === v ? "" : "none";
     document.getElementById("vbtn-" + k).classList.toggle("active", k === v);
@@ -990,7 +994,31 @@ document.addEventListener("touchend", (e) => {
 load();
 fillTrackSelects();
 renderRuns();
-showView("log");
+const lastView = getLastView();
+showView(["log","analysis","predict","data"].includes(lastView) ? lastView : "log");
+if (!runs.length) showEmptyDbDialog();
+function showEmptyDbDialog() {
+  const existing = document.getElementById("emptyDbModal");
+  if (existing) existing.remove();
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "emptyDbModal";
+  modal.innerHTML = `<div class="inner">
+    <h3>\uD83D\uDCBE Ingen data laddad</h3>
+    <p class="meta" style="margin:0 0 14px 0">Det finns ingen databas med runs i appen just nu. H\u00e4mta en tidigare exporterad databas (402Analysis eller RacingApp-backup) eller b\u00f6rja l\u00e4gga till runs direkt.</p>
+    <div class="btnrow">
+      <button onclick="document.getElementById('importFile').click(); this.closest('.modal').remove()">\uD83D\uDCE5 H\u00e4mta databas</button>
+      <button class="ghost" onclick="this.closest('.modal').remove()">B\u00f6rja utan data</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.classList.add("open");
+}
+function onDbLoaded() {
+  const m = document.getElementById("emptyDbModal");
+  if (m) m.remove();
+  renderRuns(); renderAnalysis(); renderSetupHistory();
+}
 </script>
 </body>
 </html>
