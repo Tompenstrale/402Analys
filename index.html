@@ -160,6 +160,7 @@
       <div class="hero-box"><div class="hero-label">Wind along track</div><div class="hero-value" id="p_wind">–</div><div class="hero-sub" id="p_windsub"></div></div>
     </div>
     <div class="meta" id="p_weather_full" style="margin:0 0 8px 0"></div>
+    <div class="meta" id="p_closest_match" style="margin:8px 0 0 0"></div>
     <div class="field"><label>Track</label><select id="p_track" onchange="fetchPredWeather()"></select></div>
     <div class="btnrow"><button onclick="fetchPredWeather()">🔄 Update</button></div>
   </div>
@@ -936,9 +937,38 @@ async function fetchPredWeather() {
       pf.textContent = bits.join(" · ");
     }
     renderPrediction();
+    renderClosestMatch();
   } catch(e) {
     slipEl.innerHTML = "<span class='muted'>Weather fetch failed: " + e.message + "</span>";
   }
+}
+function renderClosestMatch() {
+  const el = document.getElementById("p_closest_match");
+  if (!el) return;
+  if (!lastPredW || !runs.length) { el.innerHTML = ""; return; }
+  const cur = lastPredW;
+  let best = null, bestScore = Infinity;
+  runs.forEach((r, i) => {
+    const w = r.weather || {};
+    if (w.da === null || w.da === undefined) return;
+    const dDA = (w.da - (cur.da ?? 0)) / 500;
+    const dT = ((w.temp ?? cur.temp ?? 0) - (cur.temp ?? w.temp ?? 0)) / 5;
+    const dH = ((w.hum ?? cur.hum ?? 0) - (cur.hum ?? w.hum ?? 0)) / 10;
+    const dP = ((w.pressure ?? cur.pressure ?? 0) - (cur.pressure ?? w.pressure ?? 0)) / 5;
+    let dW = 0;
+    if (w.hw !== null && w.hw !== undefined && cur.hw !== null && cur.hw !== undefined) dW = (w.hw - cur.hw) / 2;
+    const score = dDA*dDA + dT*dT + dH*dH + dP*dP + dW*dW;
+    if (score < bestScore) { bestScore = score; best = { i, r }; }
+  });
+  if (!best) { el.innerHTML = ""; return; }
+  const r = best.r;
+  const et = r.et14 ?? r.et18 ?? r.et100 ?? null;
+  el.innerHTML = `<div class="timeslip" style="max-width:420px;cursor:pointer" onclick="showRunDetail(${best.i})" title="Click to show the full run">
+    <div class="ts-header">Closest matching run (weather)</div>
+    <div class="ts-row"><span class="ts-label">ET</span><span class="ts-value">${et !== null ? et.toFixed(3) + "s" : "\u2013"}</span></div>
+    <div class="ts-row"><span class="ts-label">Track</span><span class="ts-value">${r.track || "\u2013"}</span></div>
+    <div class="ts-row"><span class="ts-label">Date</span><span class="ts-value">${r.date || "\u2013"}${r.time ? " " + r.time : ""}</span></div>
+  </div>`;
 }
 function predFor(key, windScale) {
   const rs = runs.filter(r => r[key] && r.include !== false);
