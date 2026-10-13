@@ -7,13 +7,13 @@
 <style>
   :root {
     --bg: #f2f4f7; --card: #ffffff; --card2: #e9edf2; --border: #c4ccd6;
-    --text: #1a2430; --muted: #5a6a7a; --accent: #d99e00; --ok: #1e9e63;
+    --text: #1a1a1a; --muted: #5a6a7a; --accent: #c9a227; --gold: #d4af37; --gold-deep: #b8860b; --gold-glow: rgba(212,175,55,.55); --ok: #1e9e63;
     --warn: #c07f00; --danger: #d93333;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 16px; max-width: 900px; margin: 0 auto; }
   h1 { font-size: 1.35rem; margin-bottom: 2px; }
-  h1 .num { color: var(--accent); }
+  h1 .num { color: var(--text); text-shadow: 0 1px 0 var(--gold), 0 0 10px var(--gold-glow); }
   .subtitle { color: var(--muted); font-size: 0.82rem; margin-bottom: 16px; }
   .bottomnav {
     position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
@@ -29,7 +29,7 @@
     font-size: 1.25rem; line-height: 1; padding: 0;
   }
   .bottomnav .navbtn:hover { background: var(--card2); }
-  .bottomnav .navbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(217,158,0,.12); }
+  .bottomnav .navbtn.active { border-color: var(--gold); color: var(--text); text-shadow: 0 0 8px var(--gold-glow); background: rgba(212,175,55,.18); box-shadow: 0 0 10px var(--gold-glow); }
   .bottomnav .navlogo {
     width: 46px; height: 46px; border-radius: 16px; border: none; background: transparent;
     cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
@@ -38,13 +38,13 @@
   .bottomnav .navlogo img { width: 34px; height: 34px; object-fit: contain; border-radius: 6px; }
   body { padding-bottom: 90px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+  .card h2 { font-size: 0.95rem; margin-bottom: 12px; color: var(--text); text-transform: uppercase; letter-spacing: .05em; text-shadow: 0 1px 0 var(--gold), 0 0 9px var(--gold-glow); }
   .field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
   .field label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .field input, .field select, .field textarea { background: var(--card2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 9px; font-size: 0.9rem; width: 100%; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
   .btnrow { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  button { background: linear-gradient(180deg, #e6c96a, var(--gold) 55%, var(--gold-deep)); color: #1a1a1a; border: 1px solid var(--gold-deep); border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px var(--gold-glow), inset 0 1px 0 rgba(255,255,255,.5); }
   button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
   button:hover { filter: brightness(1.08); }
   .meta { color: var(--muted); font-size: 0.78rem; }
@@ -57,22 +57,22 @@
   .pill.no { background: rgba(90,106,122,.1); color: var(--muted); border: 1px solid var(--border); }
   .del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.95rem; padding: 1px 5px; }
   .muted { color: var(--muted); }
-  .timeslip { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 5px 12px; margin: 0 0 10px 0; max-width: 320px; }
+  .timeslip { background: var(--card2); border: 1px solid var(--gold); border-radius: 10px; padding: 5px 12px; margin: 0 0 10px 0; max-width: 320px; box-shadow: 0 2px 10px var(--gold-glow); }
   .timeslip .ts-row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; border-bottom: 1px dashed var(--border); }
   .timeslip .ts-row:last-child { border-bottom: none; }
   .timeslip .ts-label { font-size: 0.76rem; color: var(--text); font-weight: 600; }
   .timeslip .ts-value { font-size: 1rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-  .timeslip .ts-header { text-align: center; font-size: 0.63rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 3px; border-bottom: 1px solid var(--border); margin-bottom: 1px; }
+  .timeslip .ts-header { text-align: center; font-size: 0.63rem; color: var(--text); font-weight: 700; text-shadow: 0 0 6px var(--gold-glow); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 3px; border-bottom: 1px solid var(--gold); margin-bottom: 1px; }
   .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-  .hero .hero-box { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 12px; text-align: center; }
+  .hero .hero-box { background: var(--card2); border: 1px solid var(--gold); border-radius: 10px; padding: 8px 12px; text-align: center; box-shadow: 0 2px 10px var(--gold-glow); }
   .hero .hero-label { font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-  .hero .hero-value { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+  .hero .hero-value { font-size: 1.3rem; font-weight: 700; color: var(--text); text-shadow: 0 1px 0 var(--gold), 0 0 10px var(--gold-glow); }
   .hero .hero-sub { font-size: 0.7rem; color: var(--muted); }
   .bar-chart { margin-top: 6px; }
   .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
   .bar-label { flex: 0 0 90px; font-size: 0.78rem; text-align: right; }
   .bar-track { flex: 1; background: var(--card2); border-radius: 4px; height: 18px; position: relative; }
-  .bar-fill { background: var(--accent); border-radius: 4px; height: 100%; }
+  .bar-fill { background: linear-gradient(180deg, #e6c96a, var(--gold) 55%, var(--gold-deep)); border-radius: 4px; height: 100%; box-shadow: 0 0 6px var(--gold-glow); }
   .bar-val { font-size: 0.76rem; font-variant-numeric: tabular-nums; min-width: 52px; }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; padding: 48px 12px 12px; z-index: 100; }
   .modal.open { display: flex; }
@@ -969,7 +969,7 @@ function renderPrediction() {
   });
   const p14 = predFor("et14", 0.010), p18 = predFor("et18", 0.007);
   const dial = p14 ? p14.pred : p18 ? p18.pred : null;
-  if (dial) rows += `<div class="ts-row" style="border-top:2px solid var(--accent)"><span class="ts-label">Dial-in (+0.02)</span><span class="ts-value" style="color:var(--accent)">${(dial+0.02).toFixed(3)}</span></div>`;
+  if (dial) rows += `<div class="ts-row" style="border-top:2px solid var(--accent)"><span class="ts-label">Dial-in (+0.02)</span><span class="ts-value" style="color:var(--text); text-shadow:0 1px 0 var(--gold), 0 0 8px var(--gold-glow)">${(dial+0.02).toFixed(3)}</span></div>`;
   document.getElementById("predSlip").innerHTML = "<div class='timeslip'><div class='ts-header'>Predicted time slip</div>" + rows + "</div>";
 }
 
