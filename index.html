@@ -865,8 +865,8 @@ function renderAnalysis() {
       const a = (sEt - b*sDa) / n;
       const minDa = Math.min(...pts.map(p=>p.da)), maxDa = Math.max(...pts.map(p=>p.da));
       daEl.innerHTML = `
-        <table><thead><tr><th>Runs</th><th>DA range</th><th>ET per 100 ft DA</th><th>ET at DA 0</th></tr></thead>
-        <tbody><tr><td>${n}</td><td>${minDa}–${maxDa} ft</td><td><strong>${(b*100).toFixed(3)}s</strong></td><td>${a.toFixed(3)}s</td></tr></tbody></table>
+        <table><thead><tr><th>Runs</th><th>DA range</th><th>ET per 100 ft DA</th><th>ET at DA 1000</th></tr></thead>
+        <tbody><tr><td>${n}</td><td>${minDa}–${maxDa} ft</td><td><strong>${(b*100).toFixed(3)}s</strong></td><td>${(a + b * 1000).toFixed(3)}s</td></tr></tbody></table>
         <p class="meta" style="margin-top:6px">${b > 0 ? "Higher DA = slower, as expected." : b < 0 ? "Odd trend (DA seems to help) – check outliers." : "No DA dependency."}</p>`;
     }
   }
