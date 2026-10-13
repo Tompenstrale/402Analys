@@ -181,6 +181,23 @@
     </div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
   </div>
+  <div class="card" id="cardCloud">
+    <h2>☁ GitHub sync</h2>
+    <p class="meta" style="margin:0 0 10px 0">Sync the runs database to a JSON file in a GitHub repository. Auto-pull on app start, auto-push after changes. Last push wins – always pull before editing on a new device. The token is stored only on this device.</p>
+    <div class="grid">
+      <div class="field"><label>Repository (owner/name)</label><input id="cloud_repo" placeholder="Tompenstrale/402Analys"></div>
+      <div class="field"><label>Branch</label><input id="cloud_branch" placeholder="main"></div>
+      <div class="field"><label>File path in repo</label><input id="cloud_path" placeholder="data/402analysis-data.json"></div>
+      <div class="field"><label>Token (fine-grained PAT, Contents: RW)</label><input id="cloud_token" type="password" placeholder="github_pat_…"></div>
+      <div class="field"><label>Auto-sync</label><select id="cloud_auto"><option value="on">On – auto-pull on start, auto-push on change</option><option value="off">Off – manual push/pull only</option></select></div>
+    </div>
+    <div class="btnrow" style="margin-top:14px">
+      <button onclick="pushToCloud()">☁ Push to GitHub</button>
+      <button class="ghost" onclick="pullFromCloud()">☁ Pull from GitHub</button>
+      <button class="ghost" onclick="saveCloudConfig()">Save settings</button>
+    </div>
+    <div class="meta" id="cloudStatus" style="margin-top:10px"></div>
+  </div>
   <div class="card">
     <h2>Import from RacingApp</h2>
     <p class="meta" style="margin:0 0 10px 0">Load a RacingApp backup file to bring over all runs with weather data.</p>
@@ -251,11 +268,148 @@
 const LS = "analysis402.runs";
 let runs = [];
 function load() { try { runs = JSON.parse(localStorage.getItem(LS)) || []; } catch(e) { runs = []; } }
-function persist() { localStorage.setItem(LS, JSON.stringify(runs)); }
+function persist() { localStorage.setItem(LS, JSON.stringify(runs)); if (typeof autoPush === "function") autoPush(); }
 function save() { persist(); }
 const LS_VIEW = "analysis402.lastView";
 function persistLastView(v) { try { localStorage.setItem(LS_VIEW, v); } catch(e) {} }
 function getLastView() { try { return localStorage.getItem(LS_VIEW) || null; } catch(e) { return null; } }
+/* ============ CLOUD SYNC ============ */
+const LS_CLOUD = "analysis402.cloud";
+function readCloudInputs() {
+  return {
+    repo: document.getElementById("cloud_repo").value.trim(),
+    branch: document.getElementById("cloud_branch").value.trim() || "main",
+    path: document.getElementById("cloud_path").value.trim() || "data/402analysis-data.json",
+    token: document.getElementById("cloud_token").value.trim(),
+    auto: document.getElementById("cloud_auto").value
+  };
+}
+function readCloudConfig() {
+  try { return JSON.parse(localStorage.getItem(LS_CLOUD)) || {}; } catch(e) { return {}; }
+}
+function saveCloudConfig() {
+  const cfg = readCloudInputs();
+  localStorage.setItem(LS_CLOUD, JSON.stringify(cfg));
+  const el = document.getElementById("cloudStatus");
+  if (el) el.textContent = "✓ Settings saved " + new Date().toLocaleTimeString();
+}
+function fillCloudInputs() {
+  const cfg = readCloudConfig();
+  document.getElementById("cloud_repo").value = cfg.repo || "";
+  document.getElementById("cloud_branch").value = cfg.branch || "main";
+  document.getElementById("cloud_path").value = cfg.path || "data/402analysis-data.json";
+  document.getElementById("cloud_token").value = cfg.token || "";
+  document.getElementById("cloud_auto").value = cfg.auto || "on";
+}
+function cloudStatus(msg) {
+  const el = document.getElementById("cloudStatus");
+  if (el) el.textContent = msg;
+}
+function b64encodeUtf8(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64decodeUtf8(b64) {
+  const bin = atob(b64.replace(/\n/g, ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function ghApi(path, opts) {
+  const cfg = readCloudInputs();
+  if (!cfg.repo || !cfg.token) throw new Error("Repository and token are required.");
+  return fetch("https://api.github.com" + path, {
+    ...opts,
+    headers: {
+      "Authorization": "Bearer " + cfg.token,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      ...(opts.headers || {})
+    }
+  }).then(async r => {
+    if (!r.ok) {
+      let msg = r.status + " " + r.statusText;
+      try { const j = await r.json(); if (j.message) msg = j.message; } catch(e) {}
+      throw new Error(msg);
+    }
+    return r.json();
+  });
+}
+function buildSyncPayload() {
+  return { app: "402Analysis", version: 2, pushed: new Date().toISOString(), runs };
+}
+async function pushToCloud() {
+  try {
+    cloudStatus("Pushing…");
+    const cfg = readCloudInputs();
+    const payload = buildSyncPayload();
+    const b64 = b64encodeUtf8(JSON.stringify(payload));
+    let sha = null;
+    try {
+      const existing = await ghApi("/repos/" + cfg.repo + "/contents/" + cfg.path + "?ref=" + encodeURIComponent(cfg.branch), { method: "GET" });
+      sha = existing.sha;
+    } catch (e) {
+      if (!/404|Not Found/i.test(e.message)) throw e;
+    }
+    await ghApi("/repos/" + cfg.repo + "/contents/" + cfg.path, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: "402Analysis data sync " + new Date().toISOString().slice(0, 16).replace("T", " "),
+        content: b64,
+        branch: cfg.branch,
+        ...(sha ? { sha } : {})
+      })
+    });
+    localStorage.setItem(LS_CLOUD, JSON.stringify(cfg));
+    cloudStatus("✓ Pushed " + runs.length + " runs " + new Date().toLocaleTimeString());
+  } catch (e) {
+    cloudStatus("✕ Push failed: " + e.message);
+  }
+}
+async function pullFromCloud(silent) {
+  try {
+    if (!silent) cloudStatus("Pulling…");
+    const cfg = readCloudInputs();
+    const res = await ghApi("/repos/" + cfg.repo + "/contents/" + cfg.path + "?ref=" + encodeURIComponent(cfg.branch), { method: "GET" });
+    const payload = JSON.parse(b64decodeUtf8(res.content));
+    if (payload.app !== "402Analysis" || !Array.isArray(payload.runs)) throw new Error("The cloud file is not valid 402Analysis data.");
+    if (!silent && !confirm("This replaces all local runs with the cloud version (" + payload.runs.length + " runs, pushed " + (payload.pushed || "?") + ").\nUnsaved local changes will be lost. Continue?")) {
+      cloudStatus("Pull cancelled.");
+      return false;
+    }
+    localStorage.setItem(LS_CLOUD, JSON.stringify(cfg));
+    runs = payload.runs;
+    pullingFromCloud = true;
+    persist();
+    pullingFromCloud = false;
+    renderRuns(); renderAnalysis(); renderSetupHistory();
+    const m = document.getElementById("emptyDbModal");
+    if (m) m.remove();
+    cloudStatus("✓ Pulled " + runs.length + " runs " + new Date().toLocaleTimeString());
+    return true;
+  } catch (e) {
+    if (!silent || !/404|Not Found/i.test(e.message)) cloudStatus("✕ Pull failed: " + e.message);
+    return false;
+  }
+}
+let pushTimer = null, pullingFromCloud = false;
+function autoPush() {
+  if (pullingFromCloud) return;
+  const cfg = readCloudConfig();
+  if ((cfg.auto || "on") !== "on") return;
+  if (!cfg.repo || !cfg.token) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushToCloud, 3000);
+}
+async function autoPullOnStart() {
+  const cfg = readCloudConfig();
+  if ((cfg.auto || "on") !== "on") return;
+  if (!cfg.repo || !cfg.token) return;
+  const ok = await pullFromCloud(true);
+  if (ok) cloudStatus("✓ Auto-pulled " + runs.length + " runs from GitHub on start");
+}
 
 /* ============ TRACKS ============ */
 const TRACKS = [
@@ -996,19 +1150,27 @@ fillTrackSelects();
 renderRuns();
 const lastView = getLastView();
 showView(["log","analysis","predict","data"].includes(lastView) ? lastView : "log");
-if (!runs.length) showEmptyDbDialog();
+fillCloudInputs();
+const cloudCfg = readCloudConfig();
+if (cloudCfg.repo && cloudCfg.token && (cloudCfg.auto || "on") === "on") {
+  autoPullOnStart().then(() => { if (!runs.length) showEmptyDbDialog(); });
+} else if (!runs.length) {
+  showEmptyDbDialog();
+}
 function showEmptyDbDialog() {
   const existing = document.getElementById("emptyDbModal");
   if (existing) existing.remove();
   const modal = document.createElement("div");
   modal.className = "modal";
   modal.id = "emptyDbModal";
+  const cloudReady = !!(cloudCfg.repo && cloudCfg.token);
   modal.innerHTML = `<div class="inner">
-    <h3>\uD83D\uDCBE Ingen data laddad</h3>
-    <p class="meta" style="margin:0 0 14px 0">Det finns ingen databas med runs i appen just nu. H\u00e4mta en tidigare exporterad databas (402Analysis eller RacingApp-backup) eller b\u00f6rja l\u00e4gga till runs direkt.</p>
+    <h3>💾 Ingen data laddad</h3>
+    <p class="meta" style="margin:0 0 14px 0">Det finns ingen databas med runs i appen just nu. Hämta en tidigare exporterad databas eller börja lägga till runs direkt.</p>
     <div class="btnrow">
-      <button onclick="document.getElementById('importFile').click(); this.closest('.modal').remove()">\uD83D\uDCE5 H\u00e4mta databas</button>
-      <button class="ghost" onclick="this.closest('.modal').remove()">B\u00f6rja utan data</button>
+      ${cloudReady ? `<button onclick="pullFromCloud(); this.closest('.modal').remove()">☁ Hämta från GitHub</button>` : ""}
+      <button onclick="document.getElementById('importFile').click(); this.closest('.modal').remove()">📥 Hämta databasfil</button>
+      <button class="ghost" onclick="this.closest('.modal').remove()">Börja utan data</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
